@@ -2,6 +2,12 @@
   <div class="gridContainer">
     <div class="grid1">
       <div class="sidebar">
+        <h2>Projection</h2>
+        <InputRadio :items="$store.state.projectionsTitle" />
+        <div class="centerOption">
+          <h2>Center Options</h2>
+          <SelectOption :selection="$store.state.centerOptions" :itemRef="currentCenter" />
+        </div>
         <h2>Base Layer</h2>
         <BaseLayers />
         <div>
@@ -19,6 +25,7 @@
 <script>
 import { shallowRef, onMounted, markRaw, ref, watchEffect, watch } from 'vue';
 import BaseLayers from '../components/BaseLayers.vue';
+import InputRadio from '../components/InputRadio.vue';
 import 'ol/ol.css';
 import Map from 'ol/Map';
 import View from 'ol/View';
@@ -28,17 +35,94 @@ import { OSM, XYZ, Stamen, TileDebug, TileArcGISRest } from 'ol/source';
 import { useStore } from 'vuex';
 import { Stroke } from 'ol/style';
 import OptionalLayers from '@/components/OptionalLayers.vue';
+import {register} from 'ol/proj/proj4';
+import SelectOption from '@/components/SelectOption.vue';
 
 export default {
   name: 'HomeView',
-  components: {
-    BaseLayers,
-    OptionalLayers
-  },
+  components: { BaseLayers, OptionalLayers, InputRadio, SelectOption },
   setup () {
     const store = useStore()
     const mapContainer = shallowRef(null);
     const map = shallowRef(null);
+
+    // Projections
+    proj4.defs("EPSG:3825","+proj=tmerc +lat_0=0 +lon_0=119 +k=0.9999 +x_0=250000 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
+    proj4.defs("EPSG:3828","+proj=tmerc +lat_0=0 +lon_0=121 +k=0.9999 +x_0=250000 +y_0=0 +ellps=aust_SA +units=m +no_defs");
+    register(proj4)
+
+    const view4326 = new View({
+      center: [0,0],
+      zoom: 2,
+      projection: 'EPSG:4326',
+      title: 'world'
+    })
+
+    const view3825 = new View({
+      center: [449777.06920345523, 2627333.8306399807],
+      zoom: 8,
+      projection: 'EPSG:3825',
+      extent: [-2999133.104097694, 964675.7340995013, 3315454.588596386, 4723103.034050384]
+    })
+
+    const view3828 = new View({
+      center: [248543.19482292834, 2627444.4109558077],
+      zoom: 8,
+      projection: 'EPSG:3828',
+      extent: [-2204326.3713591076, 1600739.6787269707, 2284692.1803829246, 4323813.554926154]
+    })
+
+    const views = [view4326, view3825, view3828]
+
+    store.dispatch('getProjectionsTitle', views)
+
+    watchEffect(() => {
+      views.forEach(view => {
+        const epsg = view.getProjection().getCode()
+        if (store.state.currentProjection === epsg && map.value) map.value.setView(view)
+      })
+    })
+
+    //Center & Extent
+    const world = view4326
+    const EU = new View({
+      center: [13.485321538601092, 52.45287376584504],
+      zoom: 6,
+      projection: 'EPSG:4326',
+      extent: [-20.29271371580824, 26.54340080769108, 53.84996605236901, 74.19590677224758],
+      title: 'EU'
+    })
+    const US = new View({
+      center: [-100.92362186261362, 38.13459946835709],
+      zoom: 5,
+      projection: 'EPSG:4326',
+      extent: [-161.3272028668083, -8.82588222486288, -26.021063763766108, 77.91309264537576],
+      title: 'US'
+    })
+    const China = new View({
+      center: [106.5275015413533, 29.54261117376565],
+      zoom: 5,
+      projection: 'EPSG:4326',
+      extent: [61.78506214514829, 6.01902547010458, 142.69036471860034, 57.383376800420855],
+      title: 'China'
+    })
+
+    const centers = [world, EU, US, China]
+
+    store.dispatch('getCenterOptions', centers)
+
+    function changeViewCenter (e) {
+      if (map.value) {
+        if (e.style === 'EU') map.value.setView(EU)
+        else if (e.style === 'US') map.value.setView(US)
+        else if (e.style === 'China') map.value.setView(China)
+        else map.value.setView(world)
+        // if (e.style === center.get('title')) {
+        //   // console.log(center.get('title'));
+        //   map.value.setView(center)
+        // } else map.value.setView(view3857)
+      }
+    }
 
     // Base Layers
     const OSMStandard = new TileLayer({
@@ -156,10 +240,7 @@ export default {
       map.value = markRaw(new Map({
         layers: [ baseLayerGroup, optionalLayerGroup ],
         target: 'map',
-        view: new View({
-          center: [0, 0],
-          zoom: 2,
-        }),
+        view: view4326
       }))
     })
 
