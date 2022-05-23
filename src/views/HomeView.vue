@@ -4,6 +4,10 @@
       <div class="sidebar">
         <h2>Base Layer</h2>
         <BaseLayers />
+        <div>
+          <h2>Optional Layers</h2>
+          <OptionalLayers v-for="layer in $store.state.optionalLayers" :key="layer" :item="layer" />
+        </div>
       </div>
     </div>
     <div class="grid2">
@@ -14,24 +18,28 @@
 
 <script>
 import { shallowRef, onMounted, markRaw, ref, watchEffect, watch } from 'vue';
+import BaseLayers from '../components/BaseLayers.vue';
 import 'ol/ol.css';
 import Map from 'ol/Map';
 import View from 'ol/View';
 import LayerGroup from 'ol/layer/Group';
-import { Tile as TileLayer } from 'ol/layer';
-import { OSM, XYZ, Stamen } from 'ol/source';
+import { Tile as TileLayer, Graticule } from 'ol/layer';
+import { OSM, XYZ, Stamen, TileDebug, TileArcGISRest } from 'ol/source';
 import { useStore } from 'vuex';
-import BaseLayers from '../components/BaseLayers.vue';
+import { Stroke } from 'ol/style';
+import OptionalLayers from '@/components/OptionalLayers.vue';
 
 export default {
   name: 'HomeView',
   components: {
-    BaseLayers
+    BaseLayers,
+    OptionalLayers
   },
   setup () {
     const store = useStore()
     const mapContainer = shallowRef(null);
     const map = shallowRef(null);
+
     // Base Layers
     const OSMStandard = new TileLayer({
       source: new OSM(),
@@ -92,9 +100,61 @@ export default {
       })
     })
 
+    // Optional Layers
+    const tileDebug = new TileLayer({
+      source: new TileDebug(),
+      visible: false,
+      opacity: 0,
+      zIndex: 0,
+      title: "Tile Debug"
+    });
+    const tileArcGIS = new TileLayer({
+      source: new TileArcGISRest({
+        url: "https://sampleserver1.arcgisonline.com/ArcGIS/rest/services/Demographics/ESRI_Population_World/MapServer"
+      }),
+      visible: false,
+      opacity: 0,
+      zIndex: 0,
+      title: "Tile ArcGIS"
+    });
+    const graticule = new Graticule({
+      // the style to use for the lines, optional.
+      strokeStyle: new Stroke({
+        color: 'rgba(255,120,0,0.9)',
+        width: 2,
+        lineDash: [0.5, 4],
+      }),
+      visible: true,
+      opacity: 0,
+      zIndex: 0,
+      showLabels: true,
+      wrapX: false,
+      title: 'Graticule'
+    })
+
+    const optionalLayers = ref([tileDebug, tileArcGIS, graticule ]);
+    const optionalLayerGroup = new LayerGroup({
+        layers: optionalLayers.value
+    });
+
+    store.dispatch('getOptionalLayers', optionalLayers.value)
+
+    watchEffect(() => {
+      optionalLayerGroup.getLayers().forEach(layer => {
+        store.state.optionalLayers.forEach(stateLayer => {
+          const layerTitle = layer.get("title")
+          const opacity = parseFloat(stateLayer.opacity)
+          if (stateLayer.title === layerTitle) {
+            layer.setVisible(stateLayer.visibility)
+            layer.setOpacity(opacity)
+          }
+        })
+      })
+    })
+
     onMounted(() => {
       map.value = markRaw(new Map({
-        layers: [ baseLayerGroup ],
+        layers: [ baseLayerGroup, optionalLayerGroup ],
         target: 'map',
         view: new View({
           center: [0, 0],
