@@ -6,12 +6,14 @@
         <InputRadio :items="interactionType" itemRef="interactionType"/>
         <h2>Draw Type</h2>
         <SelectOption :selection="drawType" itemRef="drawType" :disabled="$store.state.inputRadio['interactionType']!=='Draw'" />
-        <h2>Additional</h2>
-        <span>
-          <button @click="clearLastFeature" class="btn">Undo</button>
-          <button @click="clearAllFeatures" class="btn">Clear All</button>
-        </span>
-        <InputCheckbox v-for="option in addOptionToDraw" :key="option" :item="option" />
+        <div class="addOptionToDraw" v-show="$store.state.inputRadio['interactionType']==='Draw'">
+          <h2>Additional</h2>
+          <span>
+            <button @click="clearLastFeature" class="btn">Undo</button>
+            <button @click="clearAllFeatures" class="btn">Clear All</button>
+          </span>
+          <InputCheckbox v-for="option in addOptionToDraw" :key="option" :item="option" />
+        </div>
       </div>
     </div>
     <div class="grid2">
@@ -21,7 +23,7 @@
 </template>
 
 <script>
-import { shallowRef, onMounted, markRaw, watchEffect } from 'vue';
+import { shallowRef, onMounted, markRaw, watchEffect, computed, ref } from 'vue';
 import SelectOption from '@/components/SelectOption.vue';
 import InputRadio from '@/components/InputRadio.vue';
 import InputCheckbox from '@/components/InputCheckbox.vue';
@@ -30,9 +32,9 @@ import Map from 'ol/Map';
 import View from 'ol/View';
 import { Tile as TileLayer, Vector as VectorLayer } from 'ol/layer';
 import { OSM, Vector as VectorSource } from 'ol/source';
-// import GeoJSON from 'ol/format/GeoJSON';
-import { Draw, Modify, Select, Translate } from 'ol/interaction';
-import { Circle as CircleStyle, Fill, Stroke, Style} from 'ol/style';
+import GeoJSON from 'ol/format/GeoJSON';
+import { Draw, Modify, Select, Translate, Snap } from 'ol/interaction';
+import { Circle as CircleStyle, Fill, Stroke, Style, Text} from 'ol/style';
 import { useStore } from 'vuex';
 
 export default {
@@ -48,6 +50,9 @@ export default {
       {title: 'Measure Segment Length', checked: false},
       {title: 'Clear Previous Feature', checked: false},
     ]
+    const startDrawingMsg = 'Click to start measuring'
+    const continueMsg = computed(()=>`Click to continue drawing ${store.state.selectOptions['drawType']}`);
+    const hintMsg = ref(startDrawingMsg)
 
     const vectorStyle = {
       'Point': new Style({
@@ -83,13 +88,41 @@ export default {
         }),
       }),
     }
+    const hintStyle = new Style({
+      text: new Text({
+        font: '12px Calibri,sans-serif',
+        fill: new Fill({
+          color: 'rgba(255, 255, 255, 1)',
+        }),
+        backgroundFill: new Fill({
+          color: 'rgba(0, 0, 0, 0.4)',
+        }),
+        padding: [2, 2, 2, 2],
+        textAlign: 'left',
+        offsetX: 15,
+      }),
+    });
     const styleFunction = function (feature) {
-      return vectorStyle[feature.getGeometry().getType()];
+      const geometry = feature.getGeometry();
+      const type = geometry.getType();
+      const style = [vectorStyle[type]]
+      if ( hintMsg.value ) {
+        hintStyle.getText().setText(hintMsg.value);
+        style.push(hintStyle);
+      }
+      return style
     };
     const newFeature = new VectorLayer({
       source: new VectorSource(),
       style: styleFunction,
     })
+    const USLayer = new VectorLayer({
+      source: new VectorSource({
+        url: 'https://openlayers.org/data/vector/us-states.json',
+        format: new GeoJSON(),
+        wrapX: false,
+      }),
+    });
 
     const draws = []
     for (let i = 0; i < drawType.length ; i++ ) {
@@ -100,6 +133,14 @@ export default {
       })
       )
     }
+    const drawStart = () => {
+      hintMsg.value = continueMsg.value;
+      // if (clearPrevious.value) source.clear()
+    }
+    const drawEnd = () => {
+      hintMsg.value = startDrawingMsg
+    }
+
     const select = new Select({
       wrapX: false,
     });
@@ -109,6 +150,10 @@ export default {
     const modify = new Modify({
       features: select.getFeatures()
     });
+    const snap = new Snap({
+      source: newFeature.getSource(),
+      pixelTolerance: 15
+    })
     function clearAllInteractions () {
       draws.forEach(draw=> draw.setActive(false))
       modify.setActive(false)
@@ -124,6 +169,8 @@ export default {
           for (let i = 0; i < drawType.length ; i++ ) {
             if (i===currentDrawTypeIndex) {
               draws[i].setActive(true)
+              draws[i].on('drawstart', drawStart)
+              draws[i].on('drawend', drawEnd)
             } else draws[i].setActive(false)
           }
           break;
@@ -150,12 +197,13 @@ export default {
           new TileLayer({
             source: new OSM(),
           }),
+          USLayer,
           newFeature
         ],
         target: 'map',
         view: new View({
-          center: [0, 0],
-          zoom: 2,
+          center: [-11036062.99394863, 4759762.370261724],
+          zoom: 4,
         }),
       }))
 
@@ -165,6 +213,7 @@ export default {
       map.value.addInteraction(select)
       map.value.addInteraction(modify)
       map.value.addInteraction(translate)
+      map.value.addInteraction(snap)
     })
 
     return { map, mapContainer, interactionType, drawType, addOptionToDraw, clearLastFeature, clearAllFeatures }
