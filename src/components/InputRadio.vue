@@ -1,6 +1,6 @@
 <template>
   <div v-for="item in items" :key="item" class="groupContainer">
-    <input :id="item" type="radio" :value="item"  v-model="$store.state.currentProjection">
+    <input :id="item" type="radio" :value="item"  v-model="$store.state.inputRadio[itemRef]">
     <label :for="item"> {{ item }} </label><br>
   </div>
 </template>
@@ -8,7 +8,8 @@
 <script>
 export default {
   props: {
-    items: Array
+    items: Array,
+    itemRef: String
   }
 }
 </script>

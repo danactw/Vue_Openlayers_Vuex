@@ -3,21 +3,21 @@
     <div class="grid1">
       <div class="sidebar">
         <h2>Projection</h2>
-        <InputRadio :items="$store.state.projectionsTitle" />
-        <div class="centerOption" v-show="$store.state.currentProjection==='EPSG:4326'">
+        <InputRadio :items="$store.state.projectionsTitle" itemRef="currentProjection"/>
+        <div class="centerOption" v-show="$store.state.inputRadio['currentProjection']==='EPSG:4326'">
           <h2>Center Options</h2>
           <SelectOption :selection="$store.state.centerOptions" itemRef="currentCenter" />
         </div>
         <h2>Base Layer</h2>
         <BaseLayers />
         <SelectOption :selection="BingMapstyles" itemRef="bingMapStyle" v-show="$store.state.baseLayersVisibility==='Bing Map'" />
-        <div class="optionalLayers" v-show="$store.state.currentProjection==='EPSG:4326'">
+        <div class="optionalLayers" v-show="$store.state.inputRadio['currentProjection']==='EPSG:4326'">
           <h2>Optional Layers</h2>
           <OptionalLayers v-for="layer in $store.state.optionalLayers" :key="layer" :item="layer" />
         </div>
       </div>
        <fieldset class="coordinate">
-        <legend>Projection: {{ $store.state.currentProjection }} </legend>
+        <legend>Projection: {{ $store.state.inputRadio['currentProjection'] }} </legend>
         <span>X coordinate: {{ coordinateX }} </span><br>
         <span>Y coordinate: {{ coordinateY }} </span>
       </fieldset>
@@ -84,7 +84,7 @@ export default {
     watchEffect(() => {
       views.forEach(view => {
         const epsg = view.getProjection().getCode()
-        if (store.state.currentProjection === epsg && map.value) map.value.setView(view)
+        if (store.state.inputRadio['currentProjection'] === epsg && map.value) map.value.setView(view)
       })
     })
 
@@ -250,7 +250,7 @@ export default {
     store.dispatch('getOptionalLayers', optionalLayers.value)
 
     watchEffect(() => {
-      if (store.state.currentProjection!=='EPSG:4326') store.state.optionalLayers.map(layer=>layer.visibility=false)
+      if (store.state.inputRadio['currentProjection'] !== 'EPSG:4326') store.state.optionalLayers.map(layer=>layer.visibility=false)
     })
 
     watchEffect(() => {

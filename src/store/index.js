@@ -3,7 +3,10 @@ import { createStore } from 'vuex'
 export default createStore({
   state: {
     projectionsTitle: [],
-    currentProjection: 'EPSG:4326',
+    inputRadio: {
+      currentProjection: 'EPSG:4326',
+      interactionType: 'Draw'
+    },
     centerOptions: [],
     selectOptions: {
       currentCenter: 'world',
