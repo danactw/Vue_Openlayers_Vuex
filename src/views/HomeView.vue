@@ -217,6 +217,10 @@ export default {
     store.dispatch('getOptionalLayers', optionalLayers.value)
 
     watchEffect(() => {
+      if (store.state.currentProjection!=='EPSG:4326') store.state.optionalLayers.map(layer=>layer.visibility=false)
+    })
+
+    watchEffect(() => {
       optionalLayerGroup.getLayers().forEach(layer => {
         store.state.optionalLayers.forEach(stateLayer => {
           const layerTitle = layer.get("title")
