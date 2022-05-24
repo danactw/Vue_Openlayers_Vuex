@@ -4,13 +4,13 @@
       <div class="sidebar">
         <h2>Projection</h2>
         <InputRadio :items="$store.state.projectionsTitle" />
-        <div class="centerOption">
+        <div class="centerOption" v-show="$store.state.currentProjection==='EPSG:4326'">
           <h2>Center Options</h2>
-          <SelectOption :selection="$store.state.centerOptions" :itemRef="currentCenter" />
+          <SelectOption :selection="$store.state.centerOptions" itemRef="currentCenter" />
         </div>
         <h2>Base Layer</h2>
         <BaseLayers />
-        <div>
+        <div class="optionalLayers" v-show="$store.state.currentProjection==='EPSG:4326'">
           <h2>Optional Layers</h2>
           <OptionalLayers v-for="layer in $store.state.optionalLayers" :key="layer" :item="layer" />
         </div>
@@ -111,18 +111,11 @@ export default {
 
     store.dispatch('getCenterOptions', centers)
 
-    function changeViewCenter (e) {
-      if (map.value) {
-        if (e.style === 'EU') map.value.setView(EU)
-        else if (e.style === 'US') map.value.setView(US)
-        else if (e.style === 'China') map.value.setView(China)
-        else map.value.setView(world)
-        // if (e.style === center.get('title')) {
-        //   // console.log(center.get('title'));
-        //   map.value.setView(center)
-        // } else map.value.setView(view3857)
-      }
-    }
+    watchEffect(()=>{
+      centers.forEach(center => {
+        if (store.state.selectOptions['currentCenter']===center.get('title') && map.value) map.value.setView(center)
+      })
+    })
 
     // Base Layers
     const OSMStandard = new TileLayer({

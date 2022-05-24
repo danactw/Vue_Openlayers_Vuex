@@ -5,6 +5,10 @@ export default createStore({
     projectionsTitle: [],
     currentProjection: 'EPSG:4326',
     centerOptions: [],
+    selectOptions: {
+      currentCenter: 'world',
+      bingMapStyle: '',
+    },
     baseLayersTitle: [],
     baseLayersVisibility: 'OSM Standard',
     baseLayersOpacity: 1,
