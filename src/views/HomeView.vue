@@ -16,6 +16,11 @@
           <OptionalLayers v-for="layer in $store.state.optionalLayers" :key="layer" :item="layer" />
         </div>
       </div>
+       <fieldset class="coordinate">
+        <legend>Projection: {{ $store.state.currentProjection }} </legend>
+        <span>X coordinate: {{ coordinateX }} </span><br>
+        <span>Y coordinate: {{ coordinateY }} </span>
+      </fieldset>
     </div>
     <div class="grid2">
       <div id="map" class="map" ref="mapContainer"></div>
@@ -46,6 +51,8 @@ export default {
     const store = useStore()
     const mapContainer = shallowRef(null);
     const map = shallowRef(null);
+    const coordinateX = ref(null)
+    const coordinateY = ref(null)
 
     // Projections
     proj4.defs("EPSG:3825","+proj=tmerc +lat_0=0 +lon_0=119 +k=0.9999 +x_0=250000 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
@@ -58,21 +65,18 @@ export default {
       projection: 'EPSG:4326',
       title: 'world'
     })
-
     const view3825 = new View({
       center: [449777.06920345523, 2627333.8306399807],
       zoom: 8,
       projection: 'EPSG:3825',
       extent: [-2999133.104097694, 964675.7340995013, 3315454.588596386, 4723103.034050384]
     })
-
     const view3828 = new View({
       center: [248543.19482292834, 2627444.4109558077],
       zoom: 8,
       projection: 'EPSG:3828',
       extent: [-2204326.3713591076, 1600739.6787269707, 2284692.1803829246, 4323813.554926154]
     })
-
     const views = [view4326, view3825, view3828]
 
     store.dispatch('getProjectionsTitle', views)
@@ -107,7 +111,6 @@ export default {
       extent: [61.78506214514829, 6.01902547010458, 142.69036471860034, 57.383376800420855],
       title: 'China'
     })
-
     const centers = [world, EU, US, China]
 
     store.dispatch('getCenterOptions', centers)
@@ -270,9 +273,14 @@ export default {
         target: 'map',
         view: view4326
       }))
+
+      map.value.on('pointermove', e => {
+        coordinateX.value = e.coordinate[0].toFixed(5)
+        coordinateY.value = e.coordinate[1].toFixed(5)
+      })
     })
 
-    return { map, mapContainer, BingMapstyles }
+    return { map, mapContainer, BingMapstyles, coordinateX, coordinateY }
   }
 }
 </script>
@@ -293,6 +301,10 @@ export default {
 .sidebar h2:hover{
   transform: translateY(1px);
   cursor: pointer;
+}
+
+.coordinate {
+  margin-top: 20px;
 }
 
 ul {
