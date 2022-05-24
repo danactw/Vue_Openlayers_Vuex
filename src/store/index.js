@@ -7,7 +7,7 @@ export default createStore({
     centerOptions: [],
     selectOptions: {
       currentCenter: 'world',
-      bingMapStyle: '',
+      bingMapStyle: 'RoadOnDemand',
     },
     baseLayersTitle: [],
     baseLayersVisibility: 'OSM Standard',
@@ -24,12 +24,12 @@ export default createStore({
       state.centerOptions.push(title)
     },
     ADD_BaseLayersTitle(state, title) {
+      if (!state.baseLayersTitle.includes(title))
       state.baseLayersTitle.push(title)
     },
     ADD_OptionalLayers(state, layer) {
       state.optionalLayers.push(layer)
     },
-
   },
   actions: {
     getProjectionsTitle({ commit }, views) {

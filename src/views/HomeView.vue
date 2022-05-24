@@ -10,6 +10,7 @@
         </div>
         <h2>Base Layer</h2>
         <BaseLayers />
+        <SelectOption :selection="BingMapstyles" itemRef="bingMapStyle" v-show="$store.state.baseLayersVisibility==='Bing Map'" />
         <div class="optionalLayers" v-show="$store.state.currentProjection==='EPSG:4326'">
           <h2>Optional Layers</h2>
           <OptionalLayers v-for="layer in $store.state.optionalLayers" :key="layer" :item="layer" />
@@ -31,7 +32,7 @@ import Map from 'ol/Map';
 import View from 'ol/View';
 import LayerGroup from 'ol/layer/Group';
 import { Tile as TileLayer, Graticule } from 'ol/layer';
-import { OSM, XYZ, Stamen, TileDebug, TileArcGISRest } from 'ol/source';
+import { OSM, XYZ, BingMaps, Stamen, TileDebug, TileArcGISRest } from 'ol/source';
 import { useStore } from 'vuex';
 import { Stroke } from 'ol/style';
 import OptionalLayers from '@/components/OptionalLayers.vue';
@@ -134,6 +135,31 @@ export default {
       zIndex: 0,
       title: "OSM Humanitarian"
     });
+    const BingMapstyles = [
+      'RoadOnDemand',
+      'AerialWithLabelsOnDemand',
+      'CanvasDark'
+    ];
+    const BingMap = []
+    for (let i = 0; i < BingMapstyles.length ; i++ ) {
+      BingMap.push(
+        new TileLayer({
+          source: new BingMaps({
+            key: "Ak6hRbflYvuARcql-hA_RTu20jkC6UQGDi4PLkJ1vOHrD30DD-1et3-N3DSohoPA",
+            imagerySet: BingMapstyles[i]
+          }),
+          visible: false,
+          opacity: 0,
+          zIndex: 0,
+          title: "Bing Map"
+        })
+      )
+    }
+    watchEffect(()=>{
+      if (store.state.baseLayersVisibility==='Bing Map') {
+        BingMap.forEach(style => style.setVisible(style.getSource().getImagerySet()===store.state.selectOptions['bingMapStyle']))
+      }
+    })
     const CartoDBBase = new TileLayer({
       source: new XYZ({
         url: "https://{1-4}.basemaps.cartocdn.com/rastertiles/voyager_labels_under/{z}/{x}/{y}.png",
@@ -153,7 +179,7 @@ export default {
       zIndex: 0,
       title: "Stamen Water"
     });
-    const baseLayers = ref([OSMStandard, OSMHumanitarian, CartoDBBase, StamenWater ]);
+    const baseLayers = ref([OSMStandard, OSMHumanitarian, CartoDBBase, StamenWater, ...BingMap ]);
     const baseLayerGroup = new LayerGroup({
         layers: baseLayers.value
     });
@@ -169,8 +195,13 @@ export default {
         const layerTitle = layer.get("title");
         const opacity = parseFloat(store.state.baseLayersOpacity)
         if (layerTitle === store.state.baseLayersVisibility) {
-          layer.setVisible(true)
-          layer.setOpacity(opacity)
+          if (store.state.baseLayersVisibility==='Bing Map') {
+            console.log('here');
+            BingMap.map(style=>style.setOpacity(opacity))
+          } else {
+            layer.setVisible(true)
+            layer.setOpacity(opacity)
+          }
         } else {
           layer.setVisible(false)
         }
@@ -241,7 +272,7 @@ export default {
       }))
     })
 
-    return { map, mapContainer }
+    return { map, mapContainer, BingMapstyles }
   }
 }
 </script>
