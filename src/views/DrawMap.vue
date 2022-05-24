@@ -5,7 +5,7 @@
         <h2>Interactions</h2>
         <InputRadio :items="interactionType" itemRef="interactionType"/>
         <h2>Draw Type</h2>
-        <SelectOption :selection="drawType" itemRef="drawType"/>
+        <SelectOption :selection="drawType" itemRef="drawType" :disabled="$store.state.inputRadio['interactionType']!=='Draw'" />
         <h2>Additional</h2>
         <span>
           <button @click="clearLastFeature" class="btn">Undo</button>
@@ -41,7 +41,7 @@ export default {
     const store = useStore()
     const mapContainer = shallowRef(null);
     const map = shallowRef(null);
-    const interactionType = ['Draw', 'Select', 'Translate', 'Modify']
+    const interactionType = ['Draw', 'Translate', 'Modify']
     const drawType = ['Point', 'LineString', 'Circle', 'Polygon']
     const addOptionToDraw = [
       {title: 'Measure', checked: true},
@@ -83,11 +83,9 @@ export default {
         }),
       }),
     }
-
     const styleFunction = function (feature) {
       return vectorStyle[feature.getGeometry().getType()];
     };
-
     const newFeature = new VectorLayer({
       source: new VectorSource(),
       style: styleFunction,
@@ -102,28 +100,49 @@ export default {
       })
       )
     }
-
     const select = new Select({
       wrapX: false,
     });
-
     const translate = new Translate({
       features: select.getFeatures() 
     })
-
     const modify = new Modify({
-      features: select.getFeatures(),
+      features: select.getFeatures()
     });
+    function clearAllInteractions () {
+      draws.forEach(draw=> draw.setActive(false))
+      modify.setActive(false)
+      translate.setActive(false)
+    }
 
     watchEffect(() => {
       const currentDrawType = store.state.selectOptions['drawType']
       const currentDrawTypeIndex = drawType.indexOf(currentDrawType)
-      for (let i = 0; i < drawType.length ; i++ ) {
-        if (i===currentDrawTypeIndex) {
-          draws[i].setActive(true)
-        } else draws[i].setActive(false)
+      clearAllInteractions()
+      switch (store.state.inputRadio['interactionType']) {
+        case 'Draw' :
+          for (let i = 0; i < drawType.length ; i++ ) {
+            if (i===currentDrawTypeIndex) {
+              draws[i].setActive(true)
+            } else draws[i].setActive(false)
+          }
+          break;
+        case 'Modify':
+          modify.setActive(true)
+          break;
+        case 'Translate':
+          translate.setActive(true)
+          break;
       }
     })
+
+    const clearLastFeature = () => {
+      const feature = newFeature.getSource().getFeatures().pop()
+      newFeature.getSource().removeFeature(feature)
+    }
+    const clearAllFeatures = () => {
+      newFeature.getSource().clear()
+    }
 
     onMounted(() => {
       map.value = markRaw(new Map({
@@ -143,9 +162,12 @@ export default {
       draws.forEach(draw=> {
         if (map.value) map.value.addInteraction(draw)
       })
+      map.value.addInteraction(select)
+      map.value.addInteraction(modify)
+      map.value.addInteraction(translate)
     })
 
-    return { map, mapContainer, interactionType, drawType, addOptionToDraw }
+    return { map, mapContainer, interactionType, drawType, addOptionToDraw, clearLastFeature, clearAllFeatures }
   }
 }
 </script>
