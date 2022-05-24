@@ -199,7 +199,6 @@ export default {
         const opacity = parseFloat(store.state.baseLayersOpacity)
         if (layerTitle === store.state.baseLayersVisibility) {
           if (store.state.baseLayersVisibility==='Bing Map') {
-            console.log('here');
             BingMap.map(style=>style.setOpacity(opacity))
           } else {
             layer.setVisible(true)
@@ -289,7 +288,7 @@ export default {
 .gridContainer {
   display: grid;
   grid-template-columns: 20vw 75vw 5vw;
-  grid-template-rows: 100vh;
+  grid-template-rows: 95vh;
 }
 
 .sidebar {
@@ -315,6 +314,6 @@ ul {
 .map {
   width: 95%;
   height: 80%;
-  margin: auto;
+  margin: 10px auto 5px;
 }
 </style>

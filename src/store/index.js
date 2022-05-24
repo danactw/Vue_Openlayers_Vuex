@@ -8,6 +8,8 @@ export default createStore({
     selectOptions: {
       currentCenter: 'world',
       bingMapStyle: 'RoadOnDemand',
+      interactionType: 'Draw',
+      drawType: 'Point'
     },
     baseLayersTitle: [],
     baseLayersVisibility: 'OSM Standard',

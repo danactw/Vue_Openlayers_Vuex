@@ -14,4 +14,10 @@ export default {
 </script>
 
 <style>
+select {
+  display: inline-block;
+  height: 40px;
+  font-size: 18px;
+  margin-right: 10px;
+}
 </style>
