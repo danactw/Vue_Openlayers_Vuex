@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import DrawMap from '../views/DrawMap.vue'
+import SwipeMap from '../views/SwipeMap.vue'
 
 const routes = [
   {
@@ -12,6 +13,11 @@ const routes = [
     path: '/draw',
     name: 'DrawMap',
     component: DrawMap
+  },
+  {
+    path: '/swipe',
+    name: 'SwipeMap',
+    component: SwipeMap
   },
 ]
 
