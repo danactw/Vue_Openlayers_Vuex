@@ -45,7 +45,7 @@ export default {
     const store = useStore()
     const mapContainer = shallowRef(null);
     const map = shallowRef(null);
-    const interactionType = ['Draw', 'Translate', 'Modify']
+    const interactionType = ['Draw', 'Translate', 'Modify', 'Scale and Rotate']
     const drawType = ['Point', 'LineString', 'Circle', 'Polygon']
     const startDrawingMsg = 'Click to start drawing'
     const continueMsg = computed(()=>`Click to continue drawing ${store.state.selectOptions['drawType']}`);

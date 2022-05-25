@@ -1,7 +1,7 @@
 <template>
   <li>
     <input :id="item.title" type="checkbox" v-model="item.checked" />
-    <label :for="item.title"> {{ item.title }} </label>
+    <label :for="item.title" class="checkboxItem"> {{ item.title }} </label>
   </li>
 </template>
 
@@ -16,6 +16,10 @@ export default {
 <style>
 li {
   list-style: none;
-  margin-top: 10px;
+  margin: 15px 5px;
+}
+
+.checkboxItem {
+  margin-left: 5px;
 }
 </style>

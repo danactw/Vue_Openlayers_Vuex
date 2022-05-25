@@ -3,6 +3,7 @@ import HomeView from '../views/HomeView.vue'
 import DrawMap from '../views/DrawMap.vue'
 import SwipeMap from '../views/SwipeMap.vue'
 import ClusterMap from '../views/ClusterMap.vue'
+import TestingMap from '../views/TestingMap.vue'
 
 const routes = [
   {
@@ -24,6 +25,11 @@ const routes = [
     path: '/cluster',
     name: 'ClusterMap',
     component: ClusterMap
+  },
+  {
+    path: '/testing',
+    name: 'TestingMap',
+    component: TestingMap
   },
 ]
 
