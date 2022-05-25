@@ -17,9 +17,12 @@ export default createStore({
     baseLayersTitle: [],
     baseLayersVisibility: 'OSM Standard',
     baseLayersOpacity: 1,
-    optionalLayers: []
-  },
-  getters: {
+    optionalLayers: [],
+    addOptionToDraw: [
+      {title: 'Measure', checked: true},
+      {title: 'Measure Segment Length', checked: false},
+      {title: 'Clear Previous Feature', checked: false},
+    ]
   },
   mutations: {
     ADD_ProjectionsTitle(state, title) {

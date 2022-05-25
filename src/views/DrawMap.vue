@@ -12,7 +12,7 @@
             <button @click="clearLastFeature" class="btn">Undo</button>
             <button @click="clearAllFeatures" class="btn">Clear All</button>
           </span>
-          <InputCheckbox v-for="option in addOptionToDraw" :key="option" :item="option" />
+          <InputCheckbox v-for="option in $store.state.addOptionToDraw" :key="option" :item="option" />
         </div>
       </div>
     </div>
@@ -47,11 +47,6 @@ export default {
     const map = shallowRef(null);
     const interactionType = ['Draw', 'Translate', 'Modify']
     const drawType = ['Point', 'LineString', 'Circle', 'Polygon']
-    const addOptionToDraw = [
-      {title: 'Measure', checked: true},
-      {title: 'Measure Segment Length', checked: false},
-      {title: 'Clear Previous Feature', checked: false},
-    ]
     const startDrawingMsg = 'Click to start drawing'
     const continueMsg = computed(()=>`Click to continue drawing ${store.state.selectOptions['drawType']}`);
     const hintMsg = ref(startDrawingMsg)
@@ -164,40 +159,40 @@ export default {
       return output;
     };
 
-    const formatArea = function (polygon) {
+    const formatPolygonArea = function (polygon) {
       const area = getArea(polygon);
       let output;
       if (area > 10000) {
-        output = `${Math.round((area / 1000000) * 100) / 100} km<sup>2</sup>`;
+        output = `${Math.round((area / 1000000) * 100) / 100} km\xB2`;
       } else {
-        output = `${Math.round(area * 100) / 100} m<sup>2</sup>`;
+        output = `${Math.round(area * 100) / 100} m\xB2`;
       }
       return output;
     };
 
-    const labelStyleFunction = function (feature) {
+    function styleFunction (feature, showHint) {
       const geometry = feature.getGeometry();
       const type = geometry.getType();
       const style = [vectorStyle[type]]
       let measureOutput, measureOutputCoord, segmentOutputCoord;
-      if ( type === store.state.selectOptions['drawType'] ) {
+      if ( type === store.state.selectOptions['drawType']) {
         if (store.state.selectOptions['drawType'] === 'LineString') {
           measureOutput = formatLength(geometry)
           measureOutputCoord = new Point(geometry.getLastCoordinate())
           segmentOutputCoord = geometry
         } else if (store.state.selectOptions['drawType'] === 'Polygon') {
-          measureOutput = formatArea(geometry)
+          measureOutput = formatPolygonArea(geometry)
           measureOutputCoord = geometry.getInteriorPoint()
           segmentOutputCoord = new LineString(geometry.getCoordinates()[0])
         }
       }
-      if (measureOutput) {
+      if ( measureOutput && store.state.addOptionToDraw[0].checked ) {
         outputStyle.setGeometry(measureOutputCoord);
         outputStyle.getText().setText(measureOutput);
         style.push(outputStyle)
       }
       // if (showSegments.value && segmentOutputCoord) {
-      if (segmentOutputCoord) {
+      if ( segmentOutputCoord && store.state.addOptionToDraw[1].checked ) {
         let count = 0
         segmentOutputCoord.forEachSegment(function (a, b) {
           const segment = new LineString([a, b]);
@@ -212,13 +207,7 @@ export default {
           count++;
         });
       }
-      return style
-    };
-    const styleFunction = function (feature) {
-      const geometry = feature.getGeometry();
-      const type = geometry.getType();
-      const style = [vectorStyle[type]]
-      if ( hintMsg.value ) {
+      if ( showHint && type==='Point') {
         hintStyle.getText().setText(hintMsg.value);
         style.push(hintStyle);
       }
@@ -226,7 +215,9 @@ export default {
     };
     const newFeature = new VectorLayer({
       source: new VectorSource(),
-      style: labelStyleFunction,
+      style: function (feature) {
+        return styleFunction(feature)
+      },
     })
     const USLayer = new VectorLayer({
       source: new VectorSource({
@@ -238,17 +229,20 @@ export default {
 
     const draws = []
     for (let i = 0; i < drawType.length ; i++ ) {
+      const showHint = true
       draws.push(
         new Draw({
         type: drawType[i],
         source: newFeature.getSource(),
-        style: styleFunction
+        style: function (feature) {
+          return styleFunction(feature, showHint)
+        }
       })
       )
     }
     const drawStart = () => {
       hintMsg.value = continueMsg.value;
-      // if (clearPrevious.value) source.clear()
+      if (store.state.addOptionToDraw[2].checked) newFeature.getSource().clear()
     }
     const drawEnd = () => {
       hintMsg.value = startDrawingMsg
@@ -329,7 +323,7 @@ export default {
       map.value.addInteraction(snap)
     })
 
-    return { map, mapContainer, interactionType, drawType, addOptionToDraw, clearLastFeature, clearAllFeatures }
+    return { map, mapContainer, interactionType, drawType, clearLastFeature, clearAllFeatures }
   }
 }
 </script>
