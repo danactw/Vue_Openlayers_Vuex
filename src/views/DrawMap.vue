@@ -34,7 +34,9 @@ import { Tile as TileLayer, Vector as VectorLayer } from 'ol/layer';
 import { OSM, Vector as VectorSource } from 'ol/source';
 import GeoJSON from 'ol/format/GeoJSON';
 import { Draw, Modify, Select, Translate, Snap } from 'ol/interaction';
-import { Circle as CircleStyle, Fill, Stroke, Style, Text} from 'ol/style';
+import { Circle as CircleStyle, RegularShape, Fill, Stroke, Style, Text } from 'ol/style';
+import { getLength, getArea } from 'ol/sphere';
+import { Point, LineString } from 'ol/geom';
 import { useStore } from 'vuex';
 
 export default {
@@ -50,7 +52,7 @@ export default {
       {title: 'Measure Segment Length', checked: false},
       {title: 'Clear Previous Feature', checked: false},
     ]
-    const startDrawingMsg = 'Click to start measuring'
+    const startDrawingMsg = 'Click to start drawing'
     const continueMsg = computed(()=>`Click to continue drawing ${store.state.selectOptions['drawType']}`);
     const hintMsg = ref(startDrawingMsg)
 
@@ -102,6 +104,116 @@ export default {
         offsetX: 15,
       }),
     });
+    const outputStyle = new Style({
+      text: new Text({
+        font: '14px Calibri,sans-serif',
+        fill: new Fill({
+          color: 'rgba(255, 255, 255, 1)',
+        }),
+        backgroundFill: new Fill({
+          color: 'rgba(0, 0, 0, 0.7)',
+        }),
+        padding: [3, 3, 3, 3],
+        textBaseline: 'bottom',
+        offsetY: -15,
+      }),
+      image: new RegularShape({
+        radius: 8,
+        points: 3,
+        angle: Math.PI,
+        displacement: [0, 10],
+        fill: new Fill({
+          color: 'rgba(0, 0, 0, 0.7)',
+        }),
+      }),
+    });
+    const segmentStyle = new Style({
+      text: new Text({
+        font: '12px Calibri,sans-serif',
+        fill: new Fill({
+          color: 'rgba(255, 255, 255, 1)',
+        }),
+        backgroundFill: new Fill({
+          color: 'rgba(0, 0, 0, 0.4)',
+        }),
+        padding: [2, 2, 2, 2],
+        textBaseline: 'bottom',
+        offsetY: -12,
+      }),
+      image: new RegularShape({
+        radius: 6,
+        points: 3,
+        angle: Math.PI,
+        displacement: [0, 8],
+        fill: new Fill({
+          color: 'rgba(0, 0, 0, 0.4)',
+        }),
+      }),
+    });
+
+    const segmentStyles = [segmentStyle];
+
+    const formatLength = function (line) {
+      const length = getLength(line);
+      let output;
+      if (length > 100) {
+        output = `${Math.round((length / 1000) * 100) / 100} km`;
+      } else {
+        output = `${Math.round(length * 100) / 100} m`;
+      }
+      return output;
+    };
+
+    const formatArea = function (polygon) {
+      const area = getArea(polygon);
+      let output;
+      if (area > 10000) {
+        output = `${Math.round((area / 1000000) * 100) / 100} km<sup>2</sup>`;
+      } else {
+        output = `${Math.round(area * 100) / 100} m<sup>2</sup>`;
+      }
+      return output;
+    };
+
+    const labelStyleFunction = function (feature) {
+      const geometry = feature.getGeometry();
+      const type = geometry.getType();
+      const style = [vectorStyle[type]]
+      let measureOutput, measureOutputCoord, segmentOutputCoord;
+      if ( type === store.state.selectOptions['drawType'] ) {
+        if (store.state.selectOptions['drawType'] === 'LineString') {
+          measureOutput = formatLength(geometry)
+          measureOutputCoord = new Point(geometry.getLastCoordinate())
+          segmentOutputCoord = geometry
+        } else if (store.state.selectOptions['drawType'] === 'Polygon') {
+          measureOutput = formatArea(geometry)
+          measureOutputCoord = geometry.getInteriorPoint()
+          segmentOutputCoord = new LineString(geometry.getCoordinates()[0])
+        }
+      }
+      if (measureOutput) {
+        outputStyle.setGeometry(measureOutputCoord);
+        outputStyle.getText().setText(measureOutput);
+        style.push(outputStyle)
+      }
+      // if (showSegments.value && segmentOutputCoord) {
+      if (segmentOutputCoord) {
+        let count = 0
+        segmentOutputCoord.forEachSegment(function (a, b) {
+          const segment = new LineString([a, b]);
+          const label = formatLength(segment);
+          if (segmentStyles.length - 1 < count) {
+            segmentStyles.push(segmentStyle.clone());
+          }
+          const segmentPoint = new Point(segment.getCoordinateAt(0.5));
+          segmentStyles[count].setGeometry(segmentPoint);
+          segmentStyles[count].getText().setText(label);
+          style.push(segmentStyles[count]);
+          count++;
+        });
+      }
+      return style
+    };
     const styleFunction = function (feature) {
       const geometry = feature.getGeometry();
       const type = geometry.getType();
@@ -114,7 +226,7 @@ export default {
     };
     const newFeature = new VectorLayer({
       source: new VectorSource(),
-      style: styleFunction,
+      style: labelStyleFunction,
     })
     const USLayer = new VectorLayer({
       source: new VectorSource({
@@ -129,7 +241,8 @@ export default {
       draws.push(
         new Draw({
         type: drawType[i],
-        source: newFeature.getSource()
+        source: newFeature.getSource(),
+        style: styleFunction
       })
       )
     }
