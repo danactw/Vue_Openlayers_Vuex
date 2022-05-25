@@ -15,6 +15,8 @@
           <h2>Optional Layers</h2>
           <OptionalLayers v-for="layer in $store.state.optionalLayers" :key="layer" :item="layer" />
         </div>
+        <h2>Map Controls</h2>
+        <InputCheckbox v-for="control in $store.state.mapControls"  :key="control" :item="control" />
       </div>
        <fieldset class="coordinate">
         <legend>Projection: {{ $store.state.inputRadio['currentProjection'] }} </legend>
@@ -43,10 +45,12 @@ import { Stroke } from 'ol/style';
 import OptionalLayers from '@/components/OptionalLayers.vue';
 import {register} from 'ol/proj/proj4';
 import SelectOption from '@/components/SelectOption.vue';
+import { defaults, FullScreen, OverviewMap, ScaleLine, ZoomSlider, ZoomToExtent, Attribution } from 'ol/control';
+import InputCheckbox from '@/components/InputCheckbox.vue';
 
 export default {
   name: 'HomeView',
-  components: { BaseLayers, OptionalLayers, InputRadio, SelectOption },
+  components: { BaseLayers, OptionalLayers, InputRadio, SelectOption, InputCheckbox },
   setup () {
     const store = useStore()
     const mapContainer = shallowRef(null);
@@ -266,17 +270,59 @@ export default {
       })
     })
 
+    // Controls
+    const attribution = new Attribution({
+      collapsible: true
+    });
+    const fullScreen = new FullScreen({
+      tipLabel: "Full Screen"
+    });
+    const overviewMap = new OverviewMap({
+      collapsed: false,
+      layers: [
+        new TileLayer({
+          source: new OSM(),
+        })
+      ],
+      tipLabel: "Toggle Overview",
+      rotateWithView: true,
+    })
+    const scaleLine = new ScaleLine({
+      bar: true,
+      text: true,
+      steps: 2,
+      minWidth: 100
+    });
+    const zoomSlider = new ZoomSlider();
+    const zoomExtent = new ZoomToExtent();
+    const mapControls = ref([attribution, fullScreen, overviewMap, scaleLine, zoomSlider, zoomExtent]);
+    store.dispatch('getMapControls', mapControls.value)
+
+    watchEffect(() => {
+      mapControls.value.forEach(control => {
+        store.state.mapControls.forEach(stateControl => {
+          if ( control.constructor.name === stateControl.title && map.value) {
+            if (stateControl.checked) map.value.addControl(control)
+            else map.value.removeControl(control)
+          } 
+        })
+      })
+    })
+
     onMounted(() => {
       map.value = markRaw(new Map({
         layers: [ baseLayerGroup, optionalLayerGroup ],
         target: 'map',
-        view: view4326
+        view: view4326,
+        controls: defaults({ attribution: false }).extend(mapControls.value),
       }))
 
       map.value.on('pointermove', e => {
         coordinateX.value = e.coordinate[0].toFixed(5)
         coordinateY.value = e.coordinate[1].toFixed(5)
       })
+
+      console.log(map.value.getControls().getArray());
     })
 
     return { map, mapContainer, BingMapstyles, coordinateX, coordinateY }
@@ -315,5 +361,9 @@ ul {
   width: 95%;
   height: 80%;
   margin: 10px auto 5px;
+}
+
+.ol-overviewmap {
+  bottom: 50px;
 }
 </style>

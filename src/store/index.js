@@ -18,6 +18,7 @@ export default createStore({
     baseLayersVisibility: 'OSM Standard',
     baseLayersOpacity: 1,
     optionalLayers: [],
+    mapControls: [],
     addOptionToDraw: [
       {title: 'Measure', checked: true},
       {title: 'Measure Segment Length', checked: false},
@@ -37,6 +38,9 @@ export default createStore({
     },
     ADD_OptionalLayers(state, layer) {
       state.optionalLayers.push(layer)
+    },
+    ADD_MapControls(state, control) {
+      state.mapControls.push(control)
     },
   },
   actions: {
@@ -59,6 +63,12 @@ export default createStore({
       optionalLayers.forEach(layer => {
         const layerItem = {title: layer.get('title'), visibility: false, opacity: 1}
         commit('ADD_OptionalLayers', layerItem)
+      })
+    },
+    getMapControls({ commit }, mapControls) {
+      mapControls.forEach(control => {
+        const controlItem = {title: control.constructor.name, checked: true }
+        commit('ADD_MapControls', controlItem)
       })
     },
   },
