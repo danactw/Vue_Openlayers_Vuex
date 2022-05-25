@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import DrawMap from '../views/DrawMap.vue'
 import SwipeMap from '../views/SwipeMap.vue'
+import ClusterMap from '../views/ClusterMap.vue'
 
 const routes = [
   {
@@ -18,6 +19,11 @@ const routes = [
     path: '/swipe',
     name: 'SwipeMap',
     component: SwipeMap
+  },
+  {
+    path: '/cluster',
+    name: 'ClusterMap',
+    component: ClusterMap
   },
 ]
 

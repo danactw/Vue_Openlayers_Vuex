@@ -3,6 +3,7 @@
     <router-link :to="{ name: 'Home' }">Main Map</router-link> |
     <router-link :to="{ name: 'DrawMap' }">Draw Map</router-link> |
     <router-link :to="{ name: 'SwipeMap' }">Swipe Map</router-link> |
+    <router-link :to="{ name: 'ClusterMap' }">Cluster Map</router-link> |
   </nav>
   <router-view />
 </template>

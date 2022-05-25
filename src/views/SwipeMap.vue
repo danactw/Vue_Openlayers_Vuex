@@ -1,7 +1,7 @@
 <template>
   <span>Use the ↑ up and ↓ down arrow keys to adjust the spyglass size.</span>
   <input id="topSwipe" type="range" style="width: 100%" v-model="topSwipe">
-  <div id="map" class="swipeMap" ref="mapContainer"></div>
+  <div id="map" class="fullMap" ref="mapContainer"></div>
   <input id="bottomSwipe" type="range" style="width: 100%" v-model="bottomSwipe">
 </template>
 
@@ -141,7 +141,7 @@ export default {
 </script>
 
 <style>
-.swipeMap {
+.fullMap {
   width: 95vw;
   height: 80vh;
   margin: 10px auto 5px;
