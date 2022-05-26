@@ -3,8 +3,9 @@
     <div class="grid1">
       <div class="sidebar">
         <h2>Draw Type</h2>
-        <SelectOption :selection="drawType" itemRef="drawType" :disabled="$store.state.inputRadio['interactionType']!=='Draw'" />
-        <div class="addOptionToDraw" v-show="$store.state.inputRadio['interactionType']==='Draw'">
+        <SelectOption :selection="drawType" itemRef="drawType" />
+        <input type="number" min="3" max="32" v-model="regPolygon" class="regPolygon" v-show="$store.state.selectOptions['drawType'] === 'Regular Polygon' ">
+        <div class="addOptionToDraw">
           <h2>Additional</h2>
           <span>
             <button @click="clearLastFeature" class="btn">Undo</button>
@@ -36,7 +37,7 @@ import { useStore } from 'vuex';
 import { getLength, getArea } from 'ol/sphere';
 import { Point, LineString } from 'ol/geom';
 // import Feature from 'ol/Feature';
-// import {createRegularPolygon, createBox} from 'ol/interaction/Draw';
+import {createRegularPolygon, createBox} from 'ol/interaction/Draw';
 
 export default {
   components: { SelectOption, InputRadio, InputCheckbox },
@@ -44,11 +45,11 @@ export default {
     const store = useStore()
     const mapContainer = shallowRef(null);
     const map = shallowRef(null);
-    const interactionType = ['Draw', 'Translate', 'Modify', 'Scale and Rotate']
-    const drawType = ['Point', 'LineString', 'Circle', 'Polygon']
+    const drawType = ['Point', 'LineString', 'Circle', 'Regular Polygon', 'Rectangle', 'Polygon(freehand)']
     const startDrawingMsg = 'Click to start drawing'
     const continueMsg = computed(()=>`Click to continue drawing ${store.state.selectOptions['drawType']}`);
     const hintMsg = ref(startDrawingMsg)
+    const regPolygon = ref(3)
 
     const vectorStyle = {
       'Point': new Style({
@@ -192,13 +193,27 @@ export default {
       const geometry = feature.getGeometry();
       const type = geometry.getType();
       const style = [vectorStyle[type]]
-      let measureOutput, measureOutputCoord, segmentOutputCoord;
-      if ( type === store.state.selectOptions['drawType'] && store.state.addOptionToDraw[0].checked) {
-        if (store.state.selectOptions['drawType'] === 'LineString') {
+      let drawType, measureOutput, measureOutputCoord, segmentOutputCoord;
+      switch (store.state.selectOptions['drawType']) {
+        case 'Point':
+          drawType = 'Point'
+          break;
+        case 'LineString':
+          drawType = 'LineString'
+          break;
+        case 'Circle':
+          drawType = 'Circle'
+          break;
+        default:
+          drawType = 'Polygon'
+          break;
+      }
+      if ( type === drawType && store.state.addOptionToDraw[0].checked) {
+        if (drawType === 'LineString') {
           measureOutput = formatLength(geometry)
           measureOutputCoord = new Point(geometry.getLastCoordinate())
           segmentOutputCoord = geometry
-        } else if (store.state.selectOptions['drawType'] === 'Polygon') {
+        } else if (drawType === 'Polygon') {
           measureOutput = formatPolygonArea(geometry)
           measureOutputCoord = geometry.getInteriorPoint()
           segmentOutputCoord = new LineString(geometry.getCoordinates()[0])
@@ -220,17 +235,6 @@ export default {
       style: feature => styleFunction(feature),
     })
 
-    const draws = []
-    for (let i = 0; i < drawType.length ; i++ ) {
-      const showHint = true
-      draws.push(
-        new Draw({
-        type: drawType[i],
-        source: newFeature.getSource(),
-        style: feature => styleFunction(feature, showHint),
-      })
-      )
-    }
     const drawStart = () => {
       hintMsg.value = continueMsg.value;
       if (store.state.addOptionToDraw[2].checked) newFeature.getSource().clear()
@@ -239,22 +243,44 @@ export default {
       hintMsg.value = startDrawingMsg
     }
 
-    function clearAllInteractions () {
-      draws.forEach(draw=> draw.setActive(false))
+    let draw
+    const addDraw = () => {
+      const showHint = true
+      let type, geometryFunction
+      switch (store.state.selectOptions['drawType']) {
+        case 'Point':
+          type = 'Point'
+          break;
+        case 'LineString':
+          type = 'LineString'
+          break;
+        case 'Polygon(freehand)':
+          type = 'Polygon'
+          break;
+        case 'Rectangle':
+          type = 'Circle'
+          geometryFunction = createBox()
+          break;
+        case 'Circle':
+          type = 'Circle'
+          break;
+        case 'Regular Polygon':
+          type = 'Circle'
+          geometryFunction = createRegularPolygon(regPolygon.value)
+          break;
+      }
+      draw = new Draw({
+        type: type,
+        source: newFeature.getSource(),
+        style: feature => styleFunction(feature, showHint),
+        geometryFunction: geometryFunction
+      })
+      draw.on('drawstart', drawStart)
+      draw.on('drawend', drawEnd)
+      if (map.value) map.value.addInteraction(draw)
     }
 
-    watchEffect(() => {
-      const currentDrawType = store.state.selectOptions['drawType']
-      const currentDrawTypeIndex = drawType.indexOf(currentDrawType)
-      clearAllInteractions()
-      for (let i = 0; i < drawType.length ; i++ ) {
-        if (i===currentDrawTypeIndex) {
-          draws[i].setActive(true)
-          draws[i].on('drawstart', drawStart)
-          draws[i].on('drawend', drawEnd)
-        } else draws[i].setActive(false)
-      }
-    })
+    addDraw()
 
     const clearLastFeature = () => {
       const feature = newFeature.getSource().getFeatures().pop()
@@ -278,13 +304,14 @@ export default {
           zoom: 4,
         }),
       }))
-
-      draws.forEach(draw => {
-        if (map.value) map.value.addInteraction(draw)
+      
+      watchEffect(() => { 
+        map.value.removeInteraction(draw)
+        addDraw()
       })
     })
 
-    return { map, mapContainer, interactionType, drawType, clearLastFeature, clearAllFeatures }
+    return { map, mapContainer, drawType, clearLastFeature, clearAllFeatures, regPolygon }
   }
 }
 </script>
@@ -302,5 +329,12 @@ export default {
 
 .btn:hover {
   transform: translateY(1px);
+}
+
+.regPolygon {
+  display: inline-block;
+  height: 30px;
+  font-size: 18px;
+  margin-right: 10px;
 }
 </style>
