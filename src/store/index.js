@@ -5,13 +5,12 @@ export default createStore({
     projectionsTitle: [],
     inputRadio: {
       currentProjection: 'EPSG:4326',
-      interactionType: 'Draw'
+      interactionType: 'Scale and Rotate'
     },
     centerOptions: [],
     selectOptions: {
       currentCenter: 'world',
       bingMapStyle: 'RoadOnDemand',
-      interactionType: 'Draw',
       drawType: 'Point'
     },
     baseLayersTitle: [],

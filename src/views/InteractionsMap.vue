@@ -4,16 +4,6 @@
       <div class="sidebar">
         <h2>Interactions</h2>
         <InputRadio :items="interactionType" itemRef="interactionType"/>
-        <h2>Draw Type</h2>
-        <SelectOption :selection="drawType" itemRef="drawType" :disabled="$store.state.inputRadio['interactionType']!=='Draw'" />
-        <div class="addOptionToDraw" v-show="$store.state.inputRadio['interactionType']==='Draw'">
-          <h2>Additional</h2>
-          <span>
-            <button @click="clearLastFeature" class="btn">Undo</button>
-            <button @click="clearAllFeatures" class="btn">Clear All</button>
-          </span>
-          <InputCheckbox v-for="option in $store.state.addOptionToDraw" :key="option" :item="option" />
-        </div>
       </div>
     </div>
     <div class="grid2">
@@ -23,7 +13,7 @@
 </template>
 
 <script>
-import { shallowRef, onMounted, markRaw, watchEffect, computed, ref } from 'vue';
+import { shallowRef, onMounted, markRaw, watchEffect } from 'vue';
 import SelectOption from '@/components/SelectOption.vue';
 import InputRadio from '@/components/InputRadio.vue';
 import InputCheckbox from '@/components/InputCheckbox.vue';
@@ -34,10 +24,10 @@ import { Tile as TileLayer, Vector as VectorLayer } from 'ol/layer';
 import { OSM, Vector as VectorSource } from 'ol/source';
 import GeoJSON from 'ol/format/GeoJSON';
 import { Draw, Modify, Select, Translate, Snap } from 'ol/interaction';
-import { Circle as CircleStyle, RegularShape, Fill, Stroke, Style, Text } from 'ol/style';
-import { getLength, getArea } from 'ol/sphere';
-import { Point, LineString } from 'ol/geom';
+import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style';
 import { useStore } from 'vuex';
+import { Point, MultiPoint } from 'ol/geom';
+import {never, platformModifierKeyOnly, primaryAction } from 'ol/events/condition';
 
 export default {
   components: { SelectOption, InputRadio, InputCheckbox },
@@ -46,235 +36,314 @@ export default {
     const mapContainer = shallowRef(null);
     const map = shallowRef(null);
     const interactionType = ['Draw', 'Translate', 'Modify', 'Scale and Rotate']
-    const drawType = ['Point', 'LineString', 'Circle', 'Polygon']
-    const startDrawingMsg = 'Click to start drawing'
-    const continueMsg = computed(()=>`Click to continue drawing ${store.state.selectOptions['drawType']}`);
-    const hintMsg = ref(startDrawingMsg)
 
-    const vectorStyle = {
-      'Point': new Style({
-        image: new CircleStyle({
-          radius: 5,
-          fill: new Fill({
-            color: '#ffcc33',
-          }),
-        })
+    const drawStyle = new Style({
+      fill: new Fill({
+        color: 'rgba(255, 255, 255, 0.2)',
       }),
-      'LineString': new Style({
-        stroke: new Stroke({
-          color: 'blue',
-          width: 2
-        })
+      stroke: new Stroke({
+        color: '#ffcc33',
+        width: 2,
       }),
-      'Polygon': new Style({
+      image: new CircleStyle({
+        radius: 7,
         fill: new Fill({
-          color: 'rgba(0, 153, 0, 0.3)'
-        }),
-        stroke: new Stroke({
-          color: 'rgba(0, 153, 0,1)',
-          width: 2
-        }),
-      }),
-      'Circle': new Style({
-        fill: new Fill({
-          color: 'rgba(255, 128, 128,0.5)'
-        }),
-        stroke: new Stroke({
-          color: 'rgba(255, 128, 128,1)',
-          width: 2
-        }),
-      }),
-    }
-    const hintStyle = new Style({
-      text: new Text({
-        font: '12px Calibri,sans-serif',
-        fill: new Fill({
-          color: 'rgba(255, 255, 255, 1)',
-        }),
-        backgroundFill: new Fill({
-          color: 'rgba(0, 0, 0, 0.4)',
-        }),
-        padding: [2, 2, 2, 2],
-        textAlign: 'left',
-        offsetX: 15,
-      }),
-    });
-    const outputStyle = new Style({
-      text: new Text({
-        font: '14px Calibri,sans-serif',
-        fill: new Fill({
-          color: 'rgba(255, 255, 255, 1)',
-        }),
-        backgroundFill: new Fill({
-          color: 'rgba(0, 0, 0, 0.7)',
-        }),
-        padding: [3, 3, 3, 3],
-        textBaseline: 'bottom',
-        offsetY: -15,
-      }),
-      image: new RegularShape({
-        radius: 8,
-        points: 3,
-        angle: Math.PI,
-        displacement: [0, 10],
-        fill: new Fill({
-          color: 'rgba(0, 0, 0, 0.7)',
-        }),
-      }),
-    });
-    const segmentStyle = new Style({
-      text: new Text({
-        font: '12px Calibri,sans-serif',
-        fill: new Fill({
-          color: 'rgba(255, 255, 255, 1)',
-        }),
-        backgroundFill: new Fill({
-          color: 'rgba(0, 0, 0, 0.4)',
-        }),
-        padding: [2, 2, 2, 2],
-        textBaseline: 'bottom',
-        offsetY: -12,
-      }),
-      image: new RegularShape({
-        radius: 6,
-        points: 3,
-        angle: Math.PI,
-        displacement: [0, 8],
-        fill: new Fill({
-          color: 'rgba(0, 0, 0, 0.4)',
+          color: '#ffcc33',
         }),
       }),
     });
 
-    const segmentStyles = [segmentStyle];
+    const modifyStyle = new Style({
+      geometry: function (feature) {
+        const modifyGeometry = feature.get('modifyGeometry');
+        return modifyGeometry ? modifyGeometry.geometry : feature.getGeometry();
+      },
+      fill: new Fill({
+        color: 'rgba(255, 100, 100, 0.2)',
+      }),
+      stroke: new Stroke({
+        color: 'rgba(255, 100, 100, 0.5)',
+        width: 2,
+      }),
+    });
 
-    const formatLength = function (line) {
-      const length = getLength(line);
-      let output;
-      if (length > 100) {
-        output = `${Math.round((length / 1000) * 100) / 100} km`;
-      } else {
-        output = `${Math.round(length * 100) / 100} m`;
-      }
-      return output;
-    };
-
-    const formatPolygonArea = function (polygon) {
-      const area = getArea(polygon);
-      let output;
-      if (area > 10000) {
-        output = `${Math.round((area / 1000000) * 100) / 100} km\xB2`;
-      } else {
-        output = `${Math.round(area * 100) / 100} m\xB2`;
-      }
-      return output;
-    };
-
-    function showSegment (segmentOutputCoord, style) {
-      let count = 0
-      segmentOutputCoord.forEachSegment(function (a, b) {
-        const segment = new LineString([a, b]);
-        const label = formatLength(segment);
-        if (segmentStyles.length - 1 < count) {
-          segmentStyles.push(segmentStyle.clone());
-        }
-        const segmentPoint = new Point(segment.getCoordinateAt(0.5));
-        segmentStyles[count].setGeometry(segmentPoint);
-        segmentStyles[count].getText().setText(label);
-        style.push(segmentStyles[count]);
-        count++;
-      });
-    }
-
-    function styleFunction (feature, showHint) {
-      const geometry = feature.getGeometry();
-      const type = geometry.getType();
-      const style = [vectorStyle[type]]
-      let measureOutput, measureOutputCoord, segmentOutputCoord;
-      if ( type === store.state.selectOptions['drawType'] && store.state.addOptionToDraw[0].checked) {
-        if (store.state.selectOptions['drawType'] === 'LineString') {
-          measureOutput = formatLength(geometry)
-          measureOutputCoord = new Point(geometry.getLastCoordinate())
-          segmentOutputCoord = geometry
-        } else if (store.state.selectOptions['drawType'] === 'Polygon') {
-          measureOutput = formatPolygonArea(geometry)
-          measureOutputCoord = geometry.getInteriorPoint()
-          segmentOutputCoord = new LineString(geometry.getCoordinates()[0])
-        }
-        outputStyle.setGeometry(measureOutputCoord);
-        outputStyle.getText().setText(measureOutput);
-        if (store.state.selectOptions['drawType'] !== 'Point') style.push(outputStyle)
-      }
-      if ( segmentOutputCoord && store.state.addOptionToDraw[1].checked ) showSegment(segmentOutputCoord, style)
-      if ( showHint && type==='Point') {
-        hintStyle.getText().setText(hintMsg.value);
-        style.push(hintStyle);
-      }
-      return style
-    };
-    const newFeature = new VectorLayer({
-      source: new VectorSource(),
-      style: feature => styleFunction(feature),
+    const centerStyle = new Style({
+      image: new CircleStyle({
+        radius: 4,
+        fill: new Fill({
+          color: 'rgba(255, 100, 100, 1)',
+        }),
+      }),
     })
+
+    const pointStyle = new Style({
+      image: new CircleStyle({
+        radius: 4,
+        fill: new Fill({
+          color: 'rgba(50, 255, 255, 0.8)',
+        }),
+      }),
+    })
+
+    const styleFunction = (feature) => {
+      const geometry = feature.getGeometry()
+      const style = [modifyStyle]
+      const { center, coordinates, minRadius, sqDistances } = calculateCenter(geometry)
+      centerStyle.setGeometry(new Point(center))
+      style.push(centerStyle)
+      const points = coordinates.filter(function (coordinate, index) {
+        return sqDistances[index] > minRadius*minRadius;
+      });
+      pointStyle.setGeometry(new MultiPoint(points))
+      style.push(pointStyle)
+      return style
+    }
+
+    const geojsonObject = {
+      'type': 'FeatureCollection',
+      'crs': {
+        'type': 'name',
+        'properties': {
+          'name': 'EPSG:3857',
+        },
+      },
+      'features': [
+        {
+          'type': 'Feature',
+          'geometry': {
+            'type': 'Polygon',
+            'coordinates': [
+              [
+                [-5e6, 6e6],
+                [-5e6, 8e6],
+                [-3e6, 8e6],
+                [-3e6, 6e6],
+                [-5e6, 6e6],
+              ],
+            ],
+          },
+        },
+        {
+          'type': 'Feature',
+          'geometry': {
+            'type': 'Polygon',
+            'coordinates': [
+              [
+                [-2e6, 6e6],
+                [-2e6, 8e6],
+                [0, 8e6],
+                [0, 6e6],
+                [-2e6, 6e6],
+              ],
+            ],
+          },
+        },
+        {
+          'type': 'Feature',
+          'geometry': {
+            'type': 'Polygon',
+            'coordinates': [
+              [
+                [1e6, 6e6],
+                [1e6, 8e6],
+                [3e6, 8e6],
+                [3e6, 6e6],
+                [1e6, 6e6],
+              ],
+            ],
+          },
+        },
+        {
+          'type': 'Feature',
+          'geometry': {
+            'type': 'Polygon',
+            'coordinates': [
+              [
+                [-2e6, -1e6],
+                [-1e6, 1e6],
+                [0, -1e6],
+                [-2e6, -1e6],
+              ],
+            ],
+          },
+        },
+      ],
+    };
+
+    const source = new VectorSource({
+      features: new GeoJSON().readFeatures(geojsonObject),
+    });
+
     const USLayer = new VectorLayer({
       source: new VectorSource({
         url: 'https://openlayers.org/data/vector/us-states.json',
         format: new GeoJSON(),
         wrapX: false,
-      }),
+      })
     });
 
-    const draws = []
-    for (let i = 0; i < drawType.length ; i++ ) {
-      const showHint = true
-      draws.push(
-        new Draw({
-          type: drawType[i],
-          source: newFeature.getSource(),
-          style: feature => styleFunction(feature, showHint),
-        })
-      )
+    const newFeature = new VectorLayer({
+      source: source,
+      style: drawStyle,
+    })
+
+    function calculateCenter(geometry) {
+      let center, coordinates, minRadius;
+      const type = geometry.getType();
+      if (type === 'Polygon') {
+        let x = 0;
+        let y = 0;
+        let i = 0;
+        coordinates = geometry.getCoordinates()[0].slice(1);
+        coordinates.forEach(function (coordinate) {
+          x += coordinate[0];
+          y += coordinate[1];
+          i++;
+        });
+        center = [x / i, y / i];
+      } else if (type === 'LineString') {
+        center = geometry.getCoordinateAt(0.5);
+        coordinates = geometry.getCoordinates();
+      } else {
+        center = getCenter(geometry.getExtent());
+      }
+      let sqDistances;
+      if (coordinates) {
+        sqDistances = coordinates.map(function (coordinate) {
+          const dx = coordinate[0] - center[0];
+          const dy = coordinate[1] - center[1];
+          return dx * dx + dy * dy;
+        });
+        minRadius = Math.sqrt(Math.max.apply(Math, sqDistances)) / 3;
+      } else {
+        minRadius =
+          Math.max(
+            getWidth(geometry.getExtent()),
+            getHeight(geometry.getExtent())
+          ) / 3;
+      }
+      return { center, coordinates, minRadius, sqDistances };
     }
-    const drawStart = () => {
-      hintMsg.value = continueMsg.value;
-      if (store.state.addOptionToDraw[2].checked) newFeature.getSource().clear()
+
+    watchEffect(() => {
+      if (store.state.inputRadio['interactionType'] === 'Scale and Rotate') {
+        newFeature.setStyle(styleFunction)
+        if (map.value) map.value.addInteraction(scaleAndRotate)
+      } else {
+        newFeature.setStyle(drawStyle)
+        if (map.value) map.value.removeInteraction(scaleAndRotate)
+      }
+    })
+
+    const defaultStyle = new Modify({source: source})
+      .getOverlay()
+      .getStyleFunction();
+
+    const scaleAndRotate = new Modify({
+      source: source,
+      condition: function (event) {
+        return primaryAction(event) && !platformModifierKeyOnly(event);
+      },
+      deleteCondition: never,
+      insertVertexCondition: never,
+      style: function (feature) {
+        feature.get('features').forEach(function (modifyFeature) {
+          const modifyGeometry = modifyFeature.get('modifyGeometry');
+          if (modifyGeometry) {
+            const point = feature.getGeometry().getCoordinates();
+            let modifyPoint = modifyGeometry.point;
+            if (!modifyPoint) {
+              // save the initial geometry and vertex position
+              modifyPoint = point;
+              modifyGeometry.point = modifyPoint;
+              modifyGeometry.geometry0 = modifyGeometry.geometry;
+              // get anchor and minimum radius of vertices to be used
+              const result = calculateCenter(modifyGeometry.geometry0);
+              modifyGeometry.center = result.center;
+              modifyGeometry.minRadius = result.minRadius;
+            }
+
+            const center = modifyGeometry.center;
+            const minRadius = modifyGeometry.minRadius;
+            let dx, dy;
+            dx = modifyPoint[0] - center[0];
+            dy = modifyPoint[1] - center[1];
+            const initialRadius = Math.sqrt(dx * dx + dy * dy);
+            if (initialRadius > minRadius) {
+              const initialAngle = Math.atan2(dy, dx);
+              dx = point[0] - center[0];
+              dy = point[1] - center[1];
+              const currentRadius = Math.sqrt(dx * dx + dy * dy);
+              if (currentRadius > 0) {
+                const currentAngle = Math.atan2(dy, dx);
+                const geometry = modifyGeometry.geometry0.clone();
+                geometry.scale(currentRadius / initialRadius, undefined, center);
+                geometry.rotate(currentAngle - initialAngle, center);
+                modifyGeometry.geometry = geometry;
+              }
+            }
+          }
+        });
+        return defaultStyle(feature);
+      },
+    });
+
+    scaleAndRotate.on('modifystart',function (event) {
+      event.features.forEach(function (feature) {
+        feature.set(
+          'modifyGeometry',
+          {geometry: feature.getGeometry().clone()},
+          true
+        );
+      });
+    });
+
+    scaleAndRotate.on('modifyend', function (event) {
+      event.features.forEach(function (feature) {
+        const modifyGeometry = feature.get('modifyGeometry');
+        if (modifyGeometry) {
+          feature.setGeometry(modifyGeometry.geometry);
+          feature.unset('modifyGeometry', true);
+        }
+      });
+    });
+
+    let draw
+    function addInteractions() {
+      draw = new Draw({
+        source: newFeature.getSource(),
+        type: 'Polygon',
+      });
+      if (map.value) map.value.addInteraction(draw);
     }
-    const drawEnd = () => {
-      hintMsg.value = startDrawingMsg
-    }
+    addInteractions()
 
     const select = new Select({
       wrapX: false,
     });
     const translate = new Translate({
-      features: select.getFeatures() 
+      features: select.getFeatures(),
     })
     const modify = new Modify({
-      features: select.getFeatures()
+      features: select.getFeatures(),
     });
     const snap = new Snap({
       source: newFeature.getSource(),
       pixelTolerance: 15
     })
+
     function clearAllInteractions () {
-      draws.forEach(draw=> draw.setActive(false))
+      if (map.value) map.value.removeInteraction(draw)
       modify.setActive(false)
       translate.setActive(false)
+      scaleAndRotate.setActive(false)
     }
 
     watchEffect(() => {
-      const currentDrawType = store.state.selectOptions['drawType']
-      const currentDrawTypeIndex = drawType.indexOf(currentDrawType)
       clearAllInteractions()
       switch (store.state.inputRadio['interactionType']) {
-        case 'Draw' :
-          for (let i = 0; i < drawType.length ; i++ ) {
-            if (i===currentDrawTypeIndex) {
-              draws[i].setActive(true)
-              draws[i].on('drawstart', drawStart)
-              draws[i].on('drawend', drawEnd)
-            } else draws[i].setActive(false)
-          }
+        case 'Draw':
+          addInteractions()
           break;
         case 'Modify':
           modify.setActive(true)
@@ -282,16 +351,11 @@ export default {
         case 'Translate':
           translate.setActive(true)
           break;
+        case 'Scale and Rotate':
+          scaleAndRotate.setActive(true)
+          break;
       }
     })
-
-    const clearLastFeature = () => {
-      const feature = newFeature.getSource().getFeatures().pop()
-      newFeature.getSource().removeFeature(feature)
-    }
-    const clearAllFeatures = () => {
-      newFeature.getSource().clear()
-    }
 
     onMounted(() => {
       map.value = markRaw(new Map({
@@ -299,26 +363,22 @@ export default {
           new TileLayer({
             source: new OSM(),
           }),
-          USLayer,
           newFeature
         ],
         target: 'map',
         view: new View({
           center: [-11036062.99394863, 4759762.370261724],
-          zoom: 4,
+          zoom: 2,
         }),
       }))
-
-      draws.forEach(draw=> {
-        if (map.value) map.value.addInteraction(draw)
-      })
       map.value.addInteraction(select)
+      map.value.addInteraction(scaleAndRotate)
       map.value.addInteraction(modify)
       map.value.addInteraction(translate)
       map.value.addInteraction(snap)
     })
 
-    return { map, mapContainer, interactionType, drawType, clearLastFeature, clearAllFeatures }
+    return { map, mapContainer, interactionType }
   }
 }
 </script>

@@ -321,8 +321,6 @@ export default {
         coordinateX.value = e.coordinate[0].toFixed(5)
         coordinateY.value = e.coordinate[1].toFixed(5)
       })
-
-      console.log(map.value.getControls().getArray());
     })
 
     return { map, mapContainer, BingMapstyles, coordinateX, coordinateY }
