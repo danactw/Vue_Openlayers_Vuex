@@ -2,9 +2,9 @@
   <nav>
     <router-link :to="{ name: 'Home' }">Main Map</router-link> |
     <router-link :to="{ name: 'DrawMap' }">Draw Map</router-link> |
+    <router-link :to="{ name: 'InteractionsMap' }">Interactions Map</router-link> |
     <router-link :to="{ name: 'SwipeMap' }">Swipe Map</router-link> |
     <router-link :to="{ name: 'ClusterMap' }">Cluster Map</router-link> |
-    <!-- <router-link :to="{ name: 'TestingMap' }">testing</router-link> | -->
   </nav>
   <router-view />
 </template>

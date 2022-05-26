@@ -1,9 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
-import DrawMap from '../views/DrawMap.vue'
+import InteractionsMap from '../views/InteractionsMap.vue'
 import SwipeMap from '../views/SwipeMap.vue'
 import ClusterMap from '../views/ClusterMap.vue'
-import TestingMap from '../views/TestingMap.vue'
+import DrawMap from '../views/DrawMap.vue'
 
 const routes = [
   {
@@ -12,9 +12,9 @@ const routes = [
     component: HomeView
   },
   {
-    path: '/draw',
-    name: 'DrawMap',
-    component: DrawMap
+    path: '/interactions',
+    name: 'InteractionsMap',
+    component: InteractionsMap
   },
   {
     path: '/swipe',
@@ -27,9 +27,9 @@ const routes = [
     component: ClusterMap
   },
   {
-    path: '/testing',
-    name: 'TestingMap',
-    component: TestingMap
+    path: '/draw',
+    name: 'DrawMap',
+    component: DrawMap
   },
 ]
 

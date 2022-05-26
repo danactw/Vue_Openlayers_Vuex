@@ -2,6 +2,8 @@
   <div class="gridContainer">
     <div class="grid1">
       <div class="sidebar">
+        <h2>Interactions</h2>
+        <InputRadio :items="interactionType" itemRef="interactionType"/>
         <h2>Draw Type</h2>
         <SelectOption :selection="drawType" itemRef="drawType" :disabled="$store.state.inputRadio['interactionType']!=='Draw'" />
         <div class="addOptionToDraw" v-show="$store.state.inputRadio['interactionType']==='Draw'">
@@ -30,13 +32,12 @@ import Map from 'ol/Map';
 import View from 'ol/View';
 import { Tile as TileLayer, Vector as VectorLayer } from 'ol/layer';
 import { OSM, Vector as VectorSource } from 'ol/source';
-import { Draw } from 'ol/interaction';
-import { Circle as CircleStyle, Fill, Stroke, Style, Text, RegularShape } from 'ol/style';
-import { useStore } from 'vuex';
+import GeoJSON from 'ol/format/GeoJSON';
+import { Draw, Modify, Select, Translate, Snap } from 'ol/interaction';
+import { Circle as CircleStyle, RegularShape, Fill, Stroke, Style, Text } from 'ol/style';
 import { getLength, getArea } from 'ol/sphere';
 import { Point, LineString } from 'ol/geom';
-// import Feature from 'ol/Feature';
-// import {createRegularPolygon, createBox} from 'ol/interaction/Draw';
+import { useStore } from 'vuex';
 
 export default {
   components: { SelectOption, InputRadio, InputCheckbox },
@@ -82,9 +83,8 @@ export default {
           color: 'rgba(255, 128, 128,1)',
           width: 2
         }),
-      })
+      }),
     }
-
     const hintStyle = new Style({
       text: new Text({
         font: '12px Calibri,sans-serif',
@@ -99,7 +99,6 @@ export default {
         offsetX: 15,
       }),
     });
-
     const outputStyle = new Style({
       text: new Text({
         font: '14px Calibri,sans-serif',
@@ -123,7 +122,6 @@ export default {
         }),
       }),
     });
-
     const segmentStyle = new Style({
       text: new Text({
         font: '12px Calibri,sans-serif',
@@ -150,7 +148,7 @@ export default {
 
     const segmentStyles = [segmentStyle];
 
-     const formatLength = function (line) {
+    const formatLength = function (line) {
       const length = getLength(line);
       let output;
       if (length > 100) {
@@ -208,27 +206,33 @@ export default {
         if (store.state.selectOptions['drawType'] !== 'Point') style.push(outputStyle)
       }
       if ( segmentOutputCoord && store.state.addOptionToDraw[1].checked ) showSegment(segmentOutputCoord, style)
-      if ( showHint && type === 'Point' ) {
+      if ( showHint && type==='Point') {
         hintStyle.getText().setText(hintMsg.value);
         style.push(hintStyle);
       }
       return style
-    }
-
+    };
     const newFeature = new VectorLayer({
       source: new VectorSource(),
       style: feature => styleFunction(feature),
     })
+    const USLayer = new VectorLayer({
+      source: new VectorSource({
+        url: 'https://openlayers.org/data/vector/us-states.json',
+        format: new GeoJSON(),
+        wrapX: false,
+      }),
+    });
 
     const draws = []
     for (let i = 0; i < drawType.length ; i++ ) {
       const showHint = true
       draws.push(
         new Draw({
-        type: drawType[i],
-        source: newFeature.getSource(),
-        style: feature => styleFunction(feature, showHint),
-      })
+          type: drawType[i],
+          source: newFeature.getSource(),
+          style: feature => styleFunction(feature, showHint),
+        })
       )
     }
     const drawStart = () => {
@@ -239,20 +243,45 @@ export default {
       hintMsg.value = startDrawingMsg
     }
 
+    const select = new Select({
+      wrapX: false,
+    });
+    const translate = new Translate({
+      features: select.getFeatures() 
+    })
+    const modify = new Modify({
+      features: select.getFeatures()
+    });
+    const snap = new Snap({
+      source: newFeature.getSource(),
+      pixelTolerance: 15
+    })
     function clearAllInteractions () {
       draws.forEach(draw=> draw.setActive(false))
+      modify.setActive(false)
+      translate.setActive(false)
     }
 
     watchEffect(() => {
       const currentDrawType = store.state.selectOptions['drawType']
       const currentDrawTypeIndex = drawType.indexOf(currentDrawType)
       clearAllInteractions()
-      for (let i = 0; i < drawType.length ; i++ ) {
-        if (i===currentDrawTypeIndex) {
-          draws[i].setActive(true)
-          draws[i].on('drawstart', drawStart)
-          draws[i].on('drawend', drawEnd)
-        } else draws[i].setActive(false)
+      switch (store.state.inputRadio['interactionType']) {
+        case 'Draw' :
+          for (let i = 0; i < drawType.length ; i++ ) {
+            if (i===currentDrawTypeIndex) {
+              draws[i].setActive(true)
+              draws[i].on('drawstart', drawStart)
+              draws[i].on('drawend', drawEnd)
+            } else draws[i].setActive(false)
+          }
+          break;
+        case 'Modify':
+          modify.setActive(true)
+          break;
+        case 'Translate':
+          translate.setActive(true)
+          break;
       }
     })
 
@@ -270,6 +299,7 @@ export default {
           new TileLayer({
             source: new OSM(),
           }),
+          USLayer,
           newFeature
         ],
         target: 'map',
@@ -279,9 +309,13 @@ export default {
         }),
       }))
 
-      draws.forEach(draw => {
+      draws.forEach(draw=> {
         if (map.value) map.value.addInteraction(draw)
       })
+      map.value.addInteraction(select)
+      map.value.addInteraction(modify)
+      map.value.addInteraction(translate)
+      map.value.addInteraction(snap)
     })
 
     return { map, mapContainer, interactionType, drawType, clearLastFeature, clearAllFeatures }
