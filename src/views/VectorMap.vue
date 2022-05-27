@@ -1,6 +1,9 @@
 <template>
-  <div id="map" class="fullMap" ref="mapContainer"></div>
-  <div class="overlayContainer" ref="overlayContainer"> {{ msg }} </div>
+  <GridLayout>
+    <template v-slot:grid2-2>
+      <div class="overlayContainer" ref="overlayContainer"> {{ msg }} </div>
+    </template>
+  </GridLayout>
 </template>
 
 <script>
@@ -13,51 +16,50 @@ import { Tile as TileLayer, VectorTile as VectorTileLayer } from 'ol/layer';
 import MVT from 'ol/format/MVT';
 import {Fill, Stroke, Style} from 'ol/style';
 import Overlay from 'ol/Overlay';
+import GridLayout from '../components/GridLayout.vue';
 
 export default {
+  components: { GridLayout },
   setup() {
     const mapContainer = shallowRef(null);
     const map = shallowRef(null);
-    const overlayContainer = ref(null)
-    const overlay = ref(null)
-    const msg = ref(null)
-    const selectedCountry = ref({})
+    const overlayContainer = ref(null);
+    const overlay = ref(null);
+    const msg = ref(null);
+    const selectedCountry = ref({});
 
     const country = new Style({
       stroke: new Stroke({
-        color: 'gray',
+        color: "gray",
         width: 1,
       }),
       fill: new Fill({
-        color: 'rgba(20,20,20,0.5)',
+        color: "rgba(20,20,20,0.5)",
       }),
     });
     const selectedStyle = new Style({
       stroke: new Stroke({
-        color: 'rgba(200,20,20,0.8)',
+        color: "rgba(200,20,20,0.8)",
         width: 2,
       }),
       fill: new Fill({
-        color: 'rgba(200,20,20,0.4)',
+        color: "rgba(200,20,20,0.4)",
       }),
     });
-
     const vectorLayer = new VectorTileLayer({
       declutter: true,
       source: new VectorTileSource({
         maxZoom: 15,
         format: new MVT({
-          idProperty: 'iso_a3',
+          idProperty: "iso_a3",
         }),
-        url:
-          'https://ahocevar.com/geoserver/gwc/service/tms/1.0.0/' +
-          'ne:ne_10m_admin_0_countries@EPSG%3A900913@pbf/{z}/{x}/{-y}.pbf',
+        url: "https://ahocevar.com/geoserver/gwc/service/tms/1.0.0/" +
+          "ne:ne_10m_admin_0_countries@EPSG:900913@pbf/{z}/{x}/{-y}.pbf",
       }),
       style: country,
     });
-
     const selectionLayer = new VectorTileLayer({
-      renderMode: 'vector',
+      renderMode: "vector",
       source: vectorLayer.getSource(),
       style: function (feature) {
         if (feature.getId() in selectedCountry.value) {
@@ -65,41 +67,39 @@ export default {
         }
       },
     });
-
     const vectorBaseMap = new VectorTileLayer({
       source: new VectorTileSource({
         format: new MVT(),
-        url: 'https://basemaps.arcgis.com/v1/arcgis/rest/services/World_Basemap/VectorTileServer/tile/{z}/{y}/{x}.pbf',
+        url: "https://basemaps.arcgis.com/v1/arcgis/rest/services/World_Basemap/VectorTileServer/tile/{z}/{y}/{x}.pbf",
       }),
-    })
-
+    });
     onMounted(() => {
       map.value = markRaw(new Map({
         layers: [
           new TileLayer({
-            source: new OSM(),
+              source: new OSM(),
           }),
           vectorLayer,
           selectionLayer,
           vectorBaseMap
         ],
-        target: 'map',
+        target: "map",
         view: new View({
           center: [0, 0],
           zoom: 2,
         }),
-      }))
+      }));
 
       // Overlay: new Overlay一定要放在onMounted裡
-      overlay.value = new Overlay({ 
+      overlay.value = new Overlay({
         element: overlayContainer.value,
-        positioning: 'center-left',
+        positioning: "center-left",
         offset: [15, 0]
-      }) 
+      });
 
-      map.value.addOverlay(overlay.value)
-      
-      map.value.on('click', (event) => {
+      map.value.addOverlay(overlay.value);
+
+      map.value.on("click", (event) => {
         vectorLayer.getFeatures(event.pixel).then(function (features) {
           console.log(features);
           if (!features.length) {
@@ -108,26 +108,22 @@ export default {
             return;
           }
           const feature = features[0];
-          if (!feature) {
-            return;
-          }
+          if (!feature) return;
           const featureId = feature.getId();
-          // add selected feature to lookup
           selectedCountry.value[featureId] = feature;
-
           selectionLayer.changed();
         });
-      })
+      });
 
-      map.value.on('pointermove', e => {
-        const currentCoord = e.coordinate
-        overlay.value.setPosition(currentCoord)
-        msg.value = map.value.getFeaturesAtPixel(e.pixel)[0].getProperties().layer
-      })
-    })
+      map.value.on("pointermove", e => {
+        const currentCoord = e.coordinate;
+        overlay.value.setPosition(currentCoord);
+        msg.value = map.value.getFeaturesAtPixel(e.pixel)[0].getProperties().layer;
+      });
+    });
 
-  return { map, mapContainer, overlayContainer, msg }
-}
+    return { map, mapContainer, overlayContainer, msg };
+  },
 }
 </script>
 

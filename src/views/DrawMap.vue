@@ -1,24 +1,19 @@
-<template> 
-  <div class="gridContainer">
-    <div class="grid1">
-      <div class="sidebar">
-        <h2>Draw Type</h2>
-        <SelectOption :selection="drawType" itemRef="drawType" />
-        <input type="number" min="3" max="32" v-model="regPolygon" class="regPolygon" v-show="$store.state.selectOptions['drawType'] === 'Regular Polygon' ">
-        <div class="addOptionToDraw">
-          <h2>Additional</h2>
-          <span>
-            <button @click="clearLastFeature" class="btn">Undo</button>
-            <button @click="clearAllFeatures" class="btn">Clear All</button>
-          </span>
-          <InputCheckbox v-for="option in $store.state.addOptionToDraw" :key="option" :item="option" />
-        </div>
+<template>
+  <GridLayout>
+    <template v-slot:grid1-1>
+      <h2>Draw Type</h2>
+      <SelectOption :selection="drawType" itemRef="drawType" />
+      <input type="number" min="3" max="32" v-model="regPolygon" class="regPolygon" v-show="$store.state.selectOptions['drawType'] === 'Regular Polygon' ">
+      <div class="addOptionToDraw">
+        <h2>Additional</h2>
+        <span>
+          <button @click="clearLastFeature" class="btn">Undo</button>
+          <button @click="clearAllFeatures" class="btn">Clear All</button>
+        </span>
+        <InputCheckbox v-for="option in $store.state.addOptionToDraw" :key="option" :item="option" />
       </div>
-    </div>
-    <div class="grid2">
-      <div id="map" class="map" ref="mapContainer"></div>
-    </div>
-  </div>
+    </template>
+  </GridLayout>
 </template>
 
 <script>
@@ -38,9 +33,10 @@ import { getLength, getArea } from 'ol/sphere';
 import { Point, LineString } from 'ol/geom';
 // import Feature from 'ol/Feature';
 import {createRegularPolygon, createBox} from 'ol/interaction/Draw';
+import GridLayout from '@/components/GridLayout.vue';
 
 export default {
-  components: { SelectOption, InputRadio, InputCheckbox },
+  components: { SelectOption, InputRadio, InputCheckbox, GridLayout },
   setup() {
     const store = useStore()
     const mapContainer = shallowRef(null);

@@ -1,15 +1,10 @@
 <template> 
-  <div class="gridContainer">
-    <div class="grid1">
-      <div class="sidebar">
-        <h2>Interactions</h2>
-        <InputRadio :items="interactionType" itemRef="interactionType"/>
-      </div>
-    </div>
-    <div class="grid2">
-      <div id="map" class="map" ref="mapContainer"></div>
-    </div>
-  </div>
+  <GridLayout>
+    <template v-slot:grid1-1>
+      <h2>Interactions</h2>
+      <InputRadio :items="interactionType" itemRef="interactionType"/>
+    </template>
+  </GridLayout>
 </template>
 
 <script>
@@ -28,9 +23,10 @@ import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style';
 import { useStore } from 'vuex';
 import { Point, MultiPoint } from 'ol/geom';
 import {never, platformModifierKeyOnly, primaryAction } from 'ol/events/condition';
+import GridLayout from '@/components/GridLayout.vue';
 
 export default {
-  components: { SelectOption, InputRadio, InputCheckbox },
+  components: { SelectOption, InputRadio, InputCheckbox, GridLayout },
   setup() {
     const store = useStore()
     const mapContainer = shallowRef(null);

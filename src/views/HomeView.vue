@@ -1,33 +1,30 @@
 <template>
-  <div class="gridContainer">
-    <div class="grid1">
-      <div class="sidebar">
-        <h2>Projection</h2>
-        <InputRadio :items="$store.state.projectionsTitle" itemRef="currentProjection"/>
-        <div class="centerOption" v-show="$store.state.inputRadio['currentProjection']==='EPSG:4326'">
-          <h2>Center Options</h2>
-          <SelectOption :selection="$store.state.centerOptions" itemRef="currentCenter" />
-        </div>
-        <h2>Base Layer</h2>
-        <BaseLayers />
-        <SelectOption :selection="BingMapstyles" itemRef="bingMapStyle" v-show="$store.state.baseLayersVisibility==='Bing Map'" />
-        <div class="optionalLayers" v-show="$store.state.inputRadio['currentProjection']==='EPSG:4326'">
-          <h2>Optional Layers</h2>
-          <OptionalLayers v-for="layer in $store.state.optionalLayers" :key="layer" :item="layer" />
-        </div>
-        <h2>Map Controls</h2>
-        <InputCheckbox v-for="control in $store.state.mapControls"  :key="control" :item="control" />
+  <GridLayout>
+    <template v-slot:grid1-1>
+      <h2>Projection</h2>
+      <InputRadio :items="$store.state.projectionsTitle" itemRef="currentProjection"/>
+      <div class="centerOption" v-show="$store.state.inputRadio['currentProjection']==='EPSG:4326'">
+        <h2>Center Options</h2>
+        <SelectOption :selection="$store.state.centerOptions" itemRef="currentCenter" />
       </div>
-       <fieldset class="coordinate">
-        <legend>Projection: {{ $store.state.inputRadio['currentProjection'] }} </legend>
-        <span>X coordinate: {{ coordinateX }} </span><br>
-        <span>Y coordinate: {{ coordinateY }} </span>
-      </fieldset>
-    </div>
-    <div class="grid2">
-      <div id="map" class="map" ref="mapContainer"></div>
-    </div>
-  </div>
+      <h2>Base Layer</h2>
+      <BaseLayers />
+      <SelectOption :selection="BingMapstyles" itemRef="bingMapStyle" v-show="$store.state.baseLayersVisibility==='Bing Map'" />
+      <div class="optionalLayers" v-show="$store.state.inputRadio['currentProjection']==='EPSG:4326'">
+        <h2>Optional Layers</h2>
+        <OptionalLayers v-for="layer in $store.state.optionalLayers" :key="layer" :item="layer" />
+      </div>
+      <h2>Map Controls</h2>
+      <InputCheckbox v-for="control in $store.state.mapControls"  :key="control" :item="control" />
+    </template>
+    <template v-slot:grid2-1>
+      <fieldset class="coordinate">
+       <legend>Projection: {{ $store.state.inputRadio['currentProjection'] }} </legend>
+       <span>X coordinate: {{ coordinateX }} </span><br>
+       <span>Y coordinate: {{ coordinateY }} </span>
+     </fieldset>
+    </template>
+  </GridLayout>
 </template>
 
 <script>
@@ -47,10 +44,11 @@ import {register} from 'ol/proj/proj4';
 import SelectOption from '@/components/SelectOption.vue';
 import { defaults, FullScreen, OverviewMap, ScaleLine, ZoomSlider, ZoomToExtent, Attribution } from 'ol/control';
 import InputCheckbox from '@/components/InputCheckbox.vue';
+import GridLayout from '@/components/GridLayout.vue';
 
 export default {
   name: 'HomeView',
-  components: { BaseLayers, OptionalLayers, InputRadio, SelectOption, InputCheckbox },
+  components: { BaseLayers, OptionalLayers, InputRadio, SelectOption, InputCheckbox, GridLayout },
   setup () {
     const store = useStore()
     const mapContainer = shallowRef(null);
