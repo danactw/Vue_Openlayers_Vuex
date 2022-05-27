@@ -5,6 +5,7 @@
     <router-link :to="{ name: 'InteractionsMap' }">Interactions Map</router-link> |
     <router-link :to="{ name: 'SwipeMap' }">Swipe Map</router-link> |
     <router-link :to="{ name: 'ClusterMap' }">Cluster Map</router-link> |
+    <router-link :to="{ name: 'VectorMap' }">Vector Map</router-link> |
   </nav>
   <router-view />
 </template>

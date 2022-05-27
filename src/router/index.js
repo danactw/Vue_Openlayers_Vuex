@@ -4,6 +4,7 @@ import InteractionsMap from '../views/InteractionsMap.vue'
 import SwipeMap from '../views/SwipeMap.vue'
 import ClusterMap from '../views/ClusterMap.vue'
 import DrawMap from '../views/DrawMap.vue'
+import VectorMap from '../views/VectorMap.vue'
 
 const routes = [
   {
@@ -30,6 +31,11 @@ const routes = [
     path: '/draw',
     name: 'DrawMap',
     component: DrawMap
+  },
+  {
+    path: '/vector',
+    name: 'VectorMap',
+    component: VectorMap
   },
 ]
 
