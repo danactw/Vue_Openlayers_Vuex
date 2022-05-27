@@ -19,32 +19,32 @@
     </template>
     <template v-slot:grid2-1>
       <fieldset class="coordinate">
-       <legend>Projection: {{ $store.state.inputRadio['currentProjection'] }} </legend>
-       <span>X coordinate: {{ coordinateX }} </span><br>
-       <span>Y coordinate: {{ coordinateY }} </span>
-     </fieldset>
+        <legend>Projection: {{ $store.state.inputRadio['currentProjection'] }} </legend>
+        <span>X coordinate: {{ coordinateX }} </span><br>
+        <span>Y coordinate: {{ coordinateY }} </span>
+      </fieldset>
     </template>
   </GridLayout>
 </template>
 
 <script>
 import { shallowRef, onMounted, markRaw, ref, watchEffect, watch } from 'vue';
+import { useStore } from 'vuex';
 import BaseLayers from '../components/BaseLayers.vue';
 import InputRadio from '../components/InputRadio.vue';
+import InputCheckbox from '@/components/InputCheckbox.vue';
+import OptionalLayers from '@/components/OptionalLayers.vue';
+import SelectOption from '@/components/SelectOption.vue';
+import GridLayout from '@/components/GridLayout.vue';
 import 'ol/ol.css';
 import Map from 'ol/Map';
 import View from 'ol/View';
 import LayerGroup from 'ol/layer/Group';
 import { Tile as TileLayer, Graticule } from 'ol/layer';
 import { OSM, XYZ, BingMaps, Stamen, TileDebug, TileArcGISRest } from 'ol/source';
-import { useStore } from 'vuex';
-import { Stroke } from 'ol/style';
-import OptionalLayers from '@/components/OptionalLayers.vue';
-import {register} from 'ol/proj/proj4';
-import SelectOption from '@/components/SelectOption.vue';
 import { defaults, FullScreen, OverviewMap, ScaleLine, ZoomSlider, ZoomToExtent, Attribution } from 'ol/control';
-import InputCheckbox from '@/components/InputCheckbox.vue';
-import GridLayout from '@/components/GridLayout.vue';
+import {register} from 'ol/proj/proj4';
+import { Stroke } from 'ol/style';
 
 export default {
   name: 'HomeView',

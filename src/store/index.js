@@ -5,13 +5,15 @@ export default createStore({
     projectionsTitle: [],
     inputRadio: {
       currentProjection: 'EPSG:4326',
-      interactionType: 'Scale and Rotate'
+      interactionType: 'Scale and Rotate',
+      vectorLayersVisibility: 'Countries',
     },
     centerOptions: [],
     selectOptions: {
       currentCenter: 'world',
       bingMapStyle: 'RoadOnDemand',
-      drawType: 'Point'
+      drawType: 'Point',
+      vectorSelectType: 'Single Select'
     },
     baseLayersTitle: [],
     baseLayersVisibility: 'OSM Standard',
@@ -22,7 +24,8 @@ export default createStore({
       {title: 'Measure', checked: true},
       {title: 'Measure Segment Length', checked: false},
       {title: 'Clear Previous Feature', checked: false},
-    ]
+    ],
+    vectorLayersTitle: [],
   },
   mutations: {
     ADD_ProjectionsTitle(state, title) {
@@ -40,6 +43,10 @@ export default createStore({
     },
     ADD_MapControls(state, control) {
       state.mapControls.push(control)
+    },
+    ADD_VectorLayersTitle(state, title) {
+      if (!state.vectorLayersTitle.includes(title))
+      state.vectorLayersTitle.push(title)
     },
   },
   actions: {
@@ -68,6 +75,11 @@ export default createStore({
       mapControls.forEach(control => {
         const controlItem = {title: control.constructor.name, checked: true }
         commit('ADD_MapControls', controlItem)
+      })
+    },
+    getVectorLayersTitle({ commit }, vectorLayers) {
+      vectorLayers.forEach(layer => {
+        commit('ADD_VectorLayersTitle', layer.get('title'))
       })
     },
   },

@@ -22,7 +22,7 @@ import { Draw, Modify, Select, Translate, Snap } from 'ol/interaction';
 import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style';
 import { useStore } from 'vuex';
 import { Point, MultiPoint } from 'ol/geom';
-import {never, platformModifierKeyOnly, primaryAction } from 'ol/events/condition';
+import { never, platformModifierKeyOnly, primaryAction } from 'ol/events/condition';
 import GridLayout from '@/components/GridLayout.vue';
 
 export default {

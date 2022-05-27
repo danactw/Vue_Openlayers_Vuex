@@ -18,22 +18,21 @@
 
 <script>
 import { shallowRef, onMounted, markRaw, watchEffect, computed, ref } from 'vue';
+import { useStore } from 'vuex';
 import SelectOption from '@/components/SelectOption.vue';
 import InputRadio from '@/components/InputRadio.vue';
 import InputCheckbox from '@/components/InputCheckbox.vue';
+import GridLayout from '@/components/GridLayout.vue';
 import 'ol/ol.css';
 import Map from 'ol/Map';
 import View from 'ol/View';
 import { Tile as TileLayer, Vector as VectorLayer } from 'ol/layer';
 import { OSM, Vector as VectorSource } from 'ol/source';
-import { Draw } from 'ol/interaction';
 import { Circle as CircleStyle, Fill, Stroke, Style, Text, RegularShape } from 'ol/style';
-import { useStore } from 'vuex';
+import { Draw } from 'ol/interaction';
+import { createRegularPolygon, createBox} from 'ol/interaction/Draw';
 import { getLength, getArea } from 'ol/sphere';
 import { Point, LineString } from 'ol/geom';
-// import Feature from 'ol/Feature';
-import {createRegularPolygon, createBox} from 'ol/interaction/Draw';
-import GridLayout from '@/components/GridLayout.vue';
 
 export default {
   components: { SelectOption, InputRadio, InputCheckbox, GridLayout },

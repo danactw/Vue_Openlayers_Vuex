@@ -10,8 +10,8 @@ import { shallowRef, onMounted, markRaw, ref, watch } from 'vue';
 import 'ol/ol.css';
 import Map from 'ol/Map';
 import View from 'ol/View';
-import { OSM, BingMaps } from 'ol/source';
 import { Tile as TileLayer } from 'ol/layer';
+import { OSM, BingMaps } from 'ol/source';
 import { getRenderPixel } from 'ol/render';
 
 export default {
