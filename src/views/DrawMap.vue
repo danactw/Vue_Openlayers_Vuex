@@ -10,7 +10,7 @@
           <button @click="clearLastFeature" class="btn">Undo</button>
           <button @click="clearAllFeatures" class="btn">Clear All</button>
         </span>
-        <InputCheckbox v-for="option in $store.state.addOptionToDraw" :key="option" :item="option" />
+        <InputCheckbox v-for="option in addOptionToDraw" :key="option" :item="option" v-model="$store.state.selectedOptionToDraw" />
       </div>
     </template>
   </GridLayout>
@@ -45,6 +45,7 @@ export default {
     const continueMsg = computed(()=>`Click to continue drawing ${store.state.selectOptions['drawType']}`);
     const hintMsg = ref(startDrawingMsg)
     const regPolygon = ref(3)
+    const addOptionToDraw = ['Measure', 'Measure Segment Length', 'Clear Previous Feature']
 
     const vectorStyle = {
       'Point': new Style({
@@ -203,7 +204,7 @@ export default {
           drawType = 'Polygon'
           break;
       }
-      if ( type === drawType && store.state.addOptionToDraw[0].checked) {
+      if ( type === drawType && store.state.selectedOptionToDraw.includes('Measure')) {
         if (drawType === 'LineString') {
           measureOutput = formatLength(geometry)
           measureOutputCoord = new Point(geometry.getLastCoordinate())
@@ -217,7 +218,7 @@ export default {
         outputStyle.getText().setText(measureOutput);
         if (store.state.selectOptions['drawType'] !== 'Point') style.push(outputStyle)
       }
-      if ( segmentOutputCoord && store.state.addOptionToDraw[1].checked ) showSegment(segmentOutputCoord, style)
+      if ( segmentOutputCoord && store.state.selectedOptionToDraw.includes('Measure Segment Length') ) showSegment(segmentOutputCoord, style)
       if ( showHint && type === 'Point' ) {
         hintStyle.getText().setText(hintMsg.value);
         style.push(hintStyle);
@@ -232,7 +233,7 @@ export default {
 
     const drawStart = () => {
       hintMsg.value = continueMsg.value;
-      if (store.state.addOptionToDraw[2].checked) newFeature.getSource().clear()
+      if (store.state.selectedOptionToDraw.includes('Clear Previous Feature')) newFeature.getSource().clear()
     }
     const drawEnd = () => {
       hintMsg.value = startDrawingMsg
@@ -306,7 +307,7 @@ export default {
       })
     })
 
-    return { map, mapContainer, drawType, clearLastFeature, clearAllFeatures, regPolygon }
+    return { map, mapContainer, drawType, clearLastFeature, clearAllFeatures, regPolygon, addOptionToDraw }
   }
 }
 </script>

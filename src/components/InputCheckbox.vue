@@ -1,25 +1,30 @@
 <template>
-  <li>
-    <input :id="item.title" type="checkbox" v-model="item.checked" />
-    <label :for="item.title" class="checkboxItem"> {{ item.title }} </label>
-  </li>
+  <v-checkbox
+    :label="item"
+    :value="item"
+    hide-details
+    @click="toggleItem(item)"
+  ></v-checkbox>
 </template>
 
 <script>
+import { useRoute } from 'vue-router';
+import { useStore } from 'vuex';
 export default {
   props: {
-    item: Object
+    item: String,
+  },
+  setup() {
+    const store = useStore()
+    const route = useRoute()
+    
+    const toggleItem = (item) => {
+      const vModel = route.name === 'DrawMap' ? store.state.selectedOptionToDraw : store.state.displayedMapControls
+      const index = vModel.indexOf(item)
+      index === -1 ?  vModel.push(item) : vModel.splice(index, 1)
+    }
+
+    return { toggleItem }
   }
 }
 </script>
-
-<style>
-li {
-  list-style: none;
-  margin: 15px 5px;
-}
-
-.checkboxItem {
-  margin-left: 5px;
-}
-</style>

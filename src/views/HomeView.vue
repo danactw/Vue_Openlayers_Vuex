@@ -1,6 +1,6 @@
 <template>
   <GridLayout>
-    <template v-slot:grid1-1>
+    <template v-slot:sidebar>
       <h2>Projection</h2>
       <InputRadio :items="projectionsTitle" itemRef="currentProjection"/>
       <div class="centerOption" v-show="$store.state.inputRadio['currentProjection']==='EPSG:4326'">
@@ -15,7 +15,7 @@
         <OptionalLayers v-for="layer in $store.state.optionalLayers" :key="layer" :item="layer" />
       </div>
       <h2>Map Controls</h2>
-      <InputCheckbox v-for="control in $store.state.mapControls"  :key="control" :item="control" />
+      <InputCheckbox v-for="control in mapControlsName"  :key="control" :item="control" v-model="$store.state.displayedMapControls" />
     </template>
     <template v-slot:grid2-1>
       <fieldset class="coordinate">
@@ -57,6 +57,7 @@ export default {
     const coordinateY = ref(null)
     const projectionsTitle = []
     const centerOptions = []
+    const mapControlsName = []
 
     // Projections
     proj4.defs("EPSG:3825","+proj=tmerc +lat_0=0 +lon_0=119 +k=0.9999 +x_0=250000 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
@@ -306,16 +307,17 @@ export default {
     const zoomSlider = new ZoomSlider();
     const zoomExtent = new ZoomToExtent();
     const mapControls = ref([attribution, fullScreen, overviewMap, scaleLine, zoomSlider, zoomExtent]);
-    store.dispatch('getMapControls', mapControls.value)
+
+    mapControls.value.forEach(control => {
+      mapControlsName.push(control.constructor.name)
+    })
 
     watchEffect(() => {
       mapControls.value.forEach(control => {
-        store.state.mapControls.forEach(stateControl => {
-          if ( control.constructor.name === stateControl.title && map.value) {
-            if (stateControl.checked) map.value.addControl(control)
-            else map.value.removeControl(control)
-          } 
-        })
+        if (map.value) {
+          if (store.state.displayedMapControls.includes(control.constructor.name)) map.value.addControl(control)
+          else map.value.removeControl(control)
+        }
       })
     })
 
@@ -333,7 +335,7 @@ export default {
       })
     })
 
-    return { map, mapContainer, BingMapstyles, coordinateX, coordinateY, projectionsTitle, centerOptions }
+    return { map, mapContainer, BingMapstyles, coordinateX, coordinateY, projectionsTitle, centerOptions, mapControlsName }
   }
 }
 </script>
