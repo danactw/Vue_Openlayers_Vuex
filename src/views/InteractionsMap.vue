@@ -1,7 +1,12 @@
 <template> 
   <GridLayout>
-    <template v-slot:grid1-1>
+    <template v-slot:sidebar>
       <h2>Interactions</h2>
+      <!-- <v-list-item>
+        <v-list-item-title class="text-h6">
+          Interactions
+        </v-list-item-title>
+      </v-list-item> -->
       <InputRadio :items="interactionType" itemRef="interactionType"/>
     </template>
   </GridLayout>

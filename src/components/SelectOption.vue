@@ -1,7 +1,12 @@
 <template>
-  <select v-model="$store.state.selectOptions[itemRef]">
-    <option :value="item" v-for="item in selection" :key="item"> {{ item }} </option>
-  </select>
+  <v-select
+    :items="selection"
+    menu-props="auto"
+    v-model="$store.state.selectOptions[itemRef]"
+    dense
+    solo
+    single-line
+  ></v-select>
 </template>
 
 <script>
@@ -12,12 +17,3 @@ export default {
   },
 }
 </script>
-
-<style>
-select {
-  display: inline-block;
-  height: 40px;
-  font-size: 18px;
-  margin-right: 10px;
-}
-</style>

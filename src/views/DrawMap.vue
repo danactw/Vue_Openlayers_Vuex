@@ -1,6 +1,6 @@
 <template>
   <GridLayout>
-    <template v-slot:grid1-1>
+    <template v-slot:sidebar>
       <h2>Draw Type</h2>
       <SelectOption :selection="drawType" itemRef="drawType" />
       <input type="number" min="3" max="32" v-model="regPolygon" class="regPolygon" v-show="$store.state.selectOptions['drawType'] === 'Regular Polygon' ">
