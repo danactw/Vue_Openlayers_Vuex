@@ -2,13 +2,11 @@ import { createStore } from 'vuex'
 
 export default createStore({
   state: {
-    projectionsTitle: [],
     inputRadio: {
       currentProjection: 'EPSG:4326',
       interactionType: 'Scale and Rotate',
       vectorLayersVisibility: 'Countries',
     },
-    centerOptions: [],
     selectOptions: {
       currentCenter: 'world',
       bingMapStyle: 'RoadOnDemand',
@@ -28,12 +26,6 @@ export default createStore({
     vectorLayersTitle: [],
   },
   mutations: {
-    ADD_ProjectionsTitle(state, title) {
-      state.projectionsTitle.push(title)
-    },
-    ADD_CenterOptions(state, title) {
-      state.centerOptions.push(title)
-    },
     ADD_BaseLayersTitle(state, title) {
       if (!state.baseLayersTitle.includes(title))
       state.baseLayersTitle.push(title)
@@ -50,16 +42,6 @@ export default createStore({
     },
   },
   actions: {
-    getProjectionsTitle({ commit }, views) {
-      views.forEach(view => {
-        commit('ADD_ProjectionsTitle', view.getProjection().getCode())
-      })
-    },
-    getCenterOptions({ commit }, views) {
-      views.forEach(view => {
-        commit('ADD_CenterOptions', view.get('title'))
-      })
-    },
     getBaseLayersTitle({ commit }, baseLayers) {
       baseLayers.forEach(layer => {
         commit('ADD_BaseLayersTitle', layer.get('title'))

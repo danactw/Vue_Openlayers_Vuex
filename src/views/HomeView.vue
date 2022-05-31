@@ -2,10 +2,10 @@
   <GridLayout>
     <template v-slot:grid1-1>
       <h2>Projection</h2>
-      <InputRadio :items="$store.state.projectionsTitle" itemRef="currentProjection"/>
+      <InputRadio :items="projectionsTitle" itemRef="currentProjection"/>
       <div class="centerOption" v-show="$store.state.inputRadio['currentProjection']==='EPSG:4326'">
         <h2>Center Options</h2>
-        <SelectOption :selection="$store.state.centerOptions" itemRef="currentCenter" />
+        <SelectOption :selection="centerOptions" itemRef="currentCenter" />
       </div>
       <h2>Base Layer</h2>
       <BaseLayers />
@@ -55,6 +55,8 @@ export default {
     const map = shallowRef(null);
     const coordinateX = ref(null)
     const coordinateY = ref(null)
+    const projectionsTitle = []
+    const centerOptions = []
 
     // Projections
     proj4.defs("EPSG:3825","+proj=tmerc +lat_0=0 +lon_0=119 +k=0.9999 +x_0=250000 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
@@ -81,7 +83,9 @@ export default {
     })
     const views = [view4326, view3825, view3828]
 
-    store.dispatch('getProjectionsTitle', views)
+    views.forEach(view => {
+      projectionsTitle.push(view.getProjection().getCode())
+    })
 
     watchEffect(() => {
       views.forEach(view => {
@@ -115,7 +119,15 @@ export default {
     })
     const centers = [world, EU, US, China]
 
-    store.dispatch('getCenterOptions', centers)
+    centers.forEach(center => {
+      centerOptions.push(center.get('title'))
+    })
+
+    watchEffect(() => {
+      if (store.state.inputRadio['currentProjection']==='EPSG:4326') {
+        store.state.selectOptions['currentCenter'] = 'world'
+      }
+    })
 
     watchEffect(()=>{
       centers.forEach(center => {
@@ -321,7 +333,7 @@ export default {
       })
     })
 
-    return { map, mapContainer, BingMapstyles, coordinateX, coordinateY }
+    return { map, mapContainer, BingMapstyles, coordinateX, coordinateY, projectionsTitle, centerOptions }
   }
 }
 </script>
