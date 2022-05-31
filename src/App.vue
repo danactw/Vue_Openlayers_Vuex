@@ -1,45 +1,28 @@
 <template>
   <v-app>
-  <nav>
-    <router-link :to="{ name: 'Home' }">Main Map</router-link> |
-    <router-link :to="{ name: 'DrawMap' }">Draw Map</router-link> |
-    <router-link :to="{ name: 'InteractionsMap' }">Interactions Map</router-link> |
-    <router-link :to="{ name: 'SwipeMap' }">Swipe Map</router-link> |
-    <router-link :to="{ name: 'ClusterMap' }">Cluster Map</router-link> |
-    <router-link :to="{ name: 'VectorMap' }">Vector Map</router-link> |
-  </nav>
+    <v-app-bar app>
+      <v-toolbar-title>Openlayers</v-toolbar-title>
+      <v-btn v-for="link in routerLinks" :key="link" :to="{ name: link.pathName }" rounded> {{ link.title }} </v-btn>
+    </v-app-bar>
     <v-main>
       <router-view/>
     </v-main>
   </v-app>
 </template>
 
-<style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  color: #2c3e50;
-}
+<script>
+export default ({
+  setup() {
+    const routerLinks = [
+      {pathName: 'Home', title: 'Main Map'},
+      {pathName: 'DrawMap', title: 'Draw Map'},
+      {pathName: 'InteractionsMap', title: 'Interactions Map'},
+      {pathName: 'SwipeMap', title: 'Swipe Map'},
+      {pathName: 'ClusterMap', title: 'Cluster Map'},
+      {pathName: 'VectorMap', title: 'Vector Map'},
+    ]
 
-nav {
-  background-color: #eee;
-  padding: 5px;
-}
-
-nav a {
-  display: inline-block;
-  font-weight: bold;
-  text-decoration: none;
-  color: #999;
-  margin-left: 10px;
-}
-
-nav a:hover {
-  transform: translateY(1px);
-}
-
-nav a.router-link-exact-active {
-  color: black;
-}
-</style>
+    return { routerLinks }
+  },
+})
+</script>
